@@ -3,7 +3,7 @@
 #
 # mostly implemented according to https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -23,7 +23,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password, hashed_password) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifies a password passed in as plain text against a hashed password (e.g. from the DB)
 
     :param plain_password: the input plain text password to check
@@ -33,7 +33,7 @@ def verify_password(plain_password, hashed_password) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def hash_password(plain_password) -> str:
+def hash_password(plain_password: str) -> str:
     """Returns the equivalent hashed password from an input plain text password
 
     :param plain_password: the input plain text password
@@ -42,7 +42,7 @@ def hash_password(plain_password) -> str:
     return pwd_context.hash(plain_password)
 
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict[str, Any]) -> str:
     """Creates a JWT access token
 
     :param data: the input data used to create the token
@@ -68,17 +68,18 @@ async def get_user_by_email(email: str, db: AsyncSession) -> UserOrm | None:
     return result.scalars().first()
 
 
-async def authenticate_user(email: str, password: str, db: AsyncSession) -> UserOrm | bool:
+async def authenticate_user(email: str, password: str, db: AsyncSession) -> UserOrm:
     """Authenticates a user by their email and password
 
     :param email: the user's email
     :param password: the user's password
     :param db: the database session
     :return: the user object if the user exists and the password is correct, False otherwise
+    :raises ValueError: if the email or password is invalid
     """
     user = await get_user_by_email(email, db)
     if not user or not verify_password(password, user.hashed_pw):
-        return False
+        raise ValueError("Invalid email or password")
 
     return user
 

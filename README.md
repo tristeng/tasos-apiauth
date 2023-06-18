@@ -1,4 +1,6 @@
 # Tasos API Authentication Library
+![python package](https://github.com/tristeng/tasos-apiauth/actions/workflows/python-package.yml/badge.svg)  
+
 A re-usable library that implements authentication, users, groups and permission handling for FastAPI. This library
 is meant to allow a FastAPI developer to get up and running quickly with functions to register, authenticate and manage
 groups and permissions for a new web application. It currently supports JSON Web Tokens (JWT) for authentication and 

@@ -1,10 +1,13 @@
 #
 # Copyright Tristen Georgiou 2023
 #
+from collections.abc import AsyncGenerator
+
 import pytest
 import pytest_asyncio
 
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tasos.apiauth.api import app
 from tasos.apiauth.auth import hash_password
@@ -13,7 +16,7 @@ from tasos.apiauth.model import Base, UserOrm
 
 
 @pytest_asyncio.fixture
-async def db_engine():
+async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
     # create the database and tables
     engine = get_engine()
     async with engine.begin() as conn:
@@ -36,7 +39,7 @@ async def db_engine():
 
 
 @pytest.fixture
-def register_payload():
+def register_payload() -> dict[str, str]:
     return {
         "email": "test@test.com",
         "password": "Abcdef123!",
@@ -48,7 +51,7 @@ TEST_URL = "http://test"
 
 
 @pytest.mark.asyncio
-async def test_register(db_engine, register_payload):  # noqa
+async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         url = "/auth/register"
         response = await ac.post(url, json=register_payload)
@@ -70,7 +73,7 @@ async def test_register(db_engine, register_payload):  # noqa
 
 
 @pytest.mark.asyncio
-async def test_login_for_access_token(db_engine, register_payload):  # noqa
+async def test_login_for_access_token(db_engine: AsyncEngine, register_payload: dict[str, str]) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # test login with valid credentials
         url = "/auth/token"
@@ -101,7 +104,7 @@ async def test_login_for_access_token(db_engine, register_payload):  # noqa
 
 
 @pytest.mark.asyncio
-async def test_current_user_info(db_engine):  # noqa
+async def test_current_user_info(db_engine: AsyncEngine) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
@@ -118,7 +121,7 @@ async def test_current_user_info(db_engine):  # noqa
 
 
 @pytest.mark.asyncio
-async def test_change_password(db_engine):  # noqa
+async def test_change_password(db_engine: AsyncEngine) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"

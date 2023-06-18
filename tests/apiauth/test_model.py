@@ -7,7 +7,7 @@ from tasos.apiauth.model import Password, ChangePassword
 
 
 @pytest.fixture
-def valid_registrations() -> list[dict]:
+def valid_registrations() -> list[dict[str, str]]:
     return [
         {
             "password": "Abcdef123!",
@@ -21,7 +21,7 @@ def valid_registrations() -> list[dict]:
 
 
 @pytest.fixture
-def invalid_passwords() -> list[dict]:
+def invalid_passwords() -> list[dict[str, str]]:
     return [
         {
             "password": "invalid",  # too short
@@ -50,7 +50,9 @@ def invalid_passwords() -> list[dict]:
     ]
 
 
-def test_password_validation(valid_registrations: list[dict], invalid_passwords) -> None:
+def test_password_validation(
+    valid_registrations: list[dict[str, str]], invalid_passwords: list[dict[str, str]]
+) -> None:
     for data in valid_registrations:
         reg = Password.parse_obj(data)
 

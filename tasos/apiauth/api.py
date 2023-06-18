@@ -62,8 +62,9 @@ async def login_for_access_token(
     """
     Attempts to login a user from email and password and returns the JWT token if successful
     """
-    user = await authenticate_user(form_data.username, form_data.password, db)
-    if not user:
+    try:
+        user = await authenticate_user(form_data.username, form_data.password, db)
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -110,8 +111,9 @@ async def change_password(
     Changes the current user's password
     """
     # check if the old password is correct
-    user = await authenticate_user(current_user.email, form_data.current_password.get_secret_value(), db)
-    if not user:
+    try:
+        user = await authenticate_user(current_user.email, form_data.current_password.get_secret_value(), db)
+    except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Existing password is incorrect")
 
     # update the password
