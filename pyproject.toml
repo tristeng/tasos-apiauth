@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "tasos-apiauth"
+version = "0.1.0"
+description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
+authors = ["tristeng <tristen.georgiou@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [
+    {include = "tasos"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.97.0"
+python-multipart = "^0.0.6"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.16"}
+pydantic = {extras = ["email", "dotenv"], version = "^1.10.9"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
+pytest-env = "^0.8.1"
+pytest-asyncio = "^0.21.0"
+httpx = "^0.24.1"
+aiosqlite = "^0.19.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+env = [
+    "APIAUTH_SECRET_KEY=somesecretkey",
+    "APIAUTH_ALGORITHM=HS256",
+    "APIAUTH_ACCESS_TOKEN_EXPIRE_MINUTES=15",
+    "APIAUTH_DATABASE_URL=sqlite+aiosqlite://?check_same_thread=false",
+]
+
+[tool.coverage.run]
+command_line = "-m pytest tests"
+branch = true
+source = [
+    "tasos",
+]
+
+[tool.coverage.report]
+omit = [
+    "tasos/apiauth/api.py",  # this file is tested with the fastapi test client, so coverage isn't reported
+]
+show_missing = true
