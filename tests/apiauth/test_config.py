@@ -6,7 +6,7 @@ import re
 from tasos.apiauth.config import get_apiauth_settings, PASSWORD_REGEX, PASSWORD_HELP
 
 
-def test_get_apiauth_settings():
+def test_get_apiauth_settings() -> None:
     # NOTE: the environment variables are set using pytest-env and are found in the pyproject.toml file
     settings = get_apiauth_settings()
     assert settings.secret_key == "somesecretkey"

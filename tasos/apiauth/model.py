@@ -148,14 +148,14 @@ class Password(BaseModel):
     password_confirm: SecretStr
 
     @validator("password")
-    def password_strength(cls, v):
+    def password_strength(cls, v: SecretStr) -> SecretStr:
         auth_settings = get_apiauth_settings()
         if not auth_settings.password_regex.match(v.get_secret_value()):
             raise ValueError(auth_settings.password_help)
         return v
 
     @validator("password_confirm")
-    def passwords_match(cls, v, values):
+    def passwords_match(cls, v: SecretStr, values: dict[str, SecretStr]) -> SecretStr:
         if "password" in values and v.get_secret_value() != values["password"].get_secret_value():
             raise ValueError("Passwords do not match")
         return v
@@ -177,7 +177,7 @@ class ChangePassword(Password):
     current_password: SecretStr
 
     @validator("current_password")
-    def current_password_matches_new(cls, v, values):
+    def current_password_matches_new(cls, v: SecretStr, values: dict[str, SecretStr]) -> SecretStr:
         if "password" in values and v.get_secret_value() == values["password"].get_secret_value():
             raise ValueError("You cannot use your current password as your new password")
         return v

@@ -7,19 +7,19 @@ from tasos.apiauth.db import get_engine, get_sessionmaker, clear_engine
 
 
 @pytest.fixture
-def mock_sqlachelmy(monkeypatch):
-    def mock_create_async_engine(database_url):
+def mock_sqlachelmy(monkeypatch: pytest.MonkeyPatch) -> None:
+    def mock_create_async_engine(database_url: str) -> str:
         return database_url
 
     monkeypatch.setattr("tasos.apiauth.db.create_async_engine", mock_create_async_engine)
 
-    def mock_async_sessionmaker(engine, autoflush, expire_on_commit):
+    def mock_async_sessionmaker(engine: str, autoflush: bool, expire_on_commit: bool) -> tuple[str, bool, bool]:
         return engine, autoflush, expire_on_commit
 
     monkeypatch.setattr("tasos.apiauth.db.async_sessionmaker", mock_async_sessionmaker)
 
 
-def test_get_engine(mock_sqlachelmy):
+def test_get_engine(mock_sqlachelmy: None) -> None:
     # clears the caching that may occur from the api client tests
     clear_engine()
 
@@ -28,7 +28,7 @@ def test_get_engine(mock_sqlachelmy):
     assert get_engine() == "sqlite+aiosqlite://?check_same_thread=false"
 
 
-def test_get_sessionmaker(mock_sqlachelmy):
+def test_get_sessionmaker(mock_sqlachelmy: None) -> None:
     # clears the caching that may occur from the api client tests
     clear_engine()
     get_sessionmaker.cache_clear()

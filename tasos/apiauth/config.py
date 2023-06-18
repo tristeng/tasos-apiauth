@@ -1,6 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
+import re
 from functools import cache
 from typing import Pattern
 
@@ -23,7 +24,7 @@ class ApiAuthSettings(BaseSettings):
     algorithm: str  #: e.g. HS256
     access_token_expire_minutes: int  #: expiry time of this token, in minutes
     database_url: str  #: Async DB engine e.g. dialect+driver://username:password@host:port/database[?key=value..]
-    password_regex: Pattern[str] = PASSWORD_REGEX  #: regex for password strength
+    password_regex: Pattern[str] = re.compile(PASSWORD_REGEX)  #: regex for password strength
     password_help: str = PASSWORD_HELP  #: help text for password strength
 
     class Config:

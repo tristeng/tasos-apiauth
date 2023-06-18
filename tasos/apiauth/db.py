@@ -1,6 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
+from collections.abc import AsyncGenerator
 from functools import cache
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
@@ -43,7 +44,7 @@ def get_sessionmaker(autoflush: bool = True, expire_on_commit: bool = False) -> 
     return async_sessionmaker(get_engine(), autoflush=autoflush, expire_on_commit=expire_on_commit)
 
 
-async def get_db() -> AsyncSession:  # pragma: no cover
+async def get_db() -> AsyncGenerator[AsyncSession, None]:  # pragma: no cover
     """Gets a new database session and automatically closes it when the context is exited
 
     :return: sqlalchemy database session

@@ -1,6 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -10,16 +11,16 @@ from tasos.apiauth.utils import _create_user, get_parser  # noqa
 
 
 @pytest.fixture
-def mock_getpass_valid(monkeypatch):
-    def mock_getpass(prompt):  # noqa
+def mock_getpass_valid(monkeypatch: pytest.MonkeyPatch) -> None:
+    def mock_getpass(prompt: str) -> str:  # noqa
         return "Abcdef123!"
 
     monkeypatch.setattr("getpass.getpass", mock_getpass)
 
 
 @pytest.fixture
-def mock_getpass_no_match(monkeypatch):
-    def mock_getpass(prompt):  # noqa
+def mock_getpass_no_match(monkeypatch: pytest.MonkeyPatch) -> None:
+    def mock_getpass(prompt: str) -> Iterator[str]:  # noqa
         yield "Abcdef123!"
         yield "abcdef123!"
 
@@ -27,7 +28,7 @@ def mock_getpass_no_match(monkeypatch):
 
 
 @pytest.fixture
-def mock_database(monkeypatch):
+def mock_database(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     mock_db = AsyncMock()
     mock_db.add = MagicMock()  # add is an sync method
 
@@ -35,7 +36,7 @@ def mock_database(monkeypatch):
     mock_cm.__aenter__.return_value = mock_db
     mock_session_maker = MagicMock(return_value=mock_cm)
 
-    def mock_get_sessionmaker():
+    def mock_get_sessionmaker() -> MagicMock:
         return mock_session_maker
 
     monkeypatch.setattr("tasos.apiauth.utils.get_sessionmaker", mock_get_sessionmaker)
@@ -44,24 +45,24 @@ def mock_database(monkeypatch):
 
 
 @pytest.fixture
-def mock_user_info_from_orm(monkeypatch):
-    def mock_user_info_from_orm(user):  # noqa
+def mock_user_info_from_orm(monkeypatch: pytest.MonkeyPatch) -> None:
+    def mock_user_info_from_orm(user: UserOrm) -> str:  # noqa
         return "user info"
 
     monkeypatch.setattr("tasos.apiauth.utils.UserInfo.from_orm", mock_user_info_from_orm)
 
 
 @pytest.fixture
-def mock_hash_password(monkeypatch):
-    def mock_hash_password(plain):  # noqa
+def mock_hash_password(monkeypatch: pytest.MonkeyPatch) -> None:
+    def mock_hash_password(plain: str) -> str:  # noqa
         return plain
 
     monkeypatch.setattr("tasos.apiauth.utils.hash_password", mock_hash_password)
 
 
 @pytest.fixture
-def mock_get_user_not_exists(monkeypatch):
-    async def mock_get_user_by_email(email, session):  # noqa
+def mock_get_user_not_exists(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def mock_get_user_by_email(email: str, session: AsyncMock) -> None:  # noqa
         # return None to signify the user hasn't been registered yet
         return None
 
@@ -69,8 +70,8 @@ def mock_get_user_not_exists(monkeypatch):
 
 
 @pytest.fixture
-def mock_get_user_exists(monkeypatch):
-    async def mock_get_user_by_email(email, session):  # noqa
+def mock_get_user_exists(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def mock_get_user_by_email(email: str, session: AsyncMock) -> UserOrm:  # noqa
         # return a user to signify this email has already been registered
         return UserOrm(
             email="test@test.com",
@@ -82,7 +83,7 @@ def mock_get_user_exists(monkeypatch):
     monkeypatch.setattr("tasos.apiauth.utils.get_user_by_email", mock_get_user_by_email)
 
 
-def create_user_assertions(mock_database, expected):
+def create_user_assertions(mock_database: AsyncMock, expected: UserOrm) -> None:
     mock_database.add.assert_called_once()
     actual = mock_database.add.call_args.args[0]
     assert actual.email == expected.email
@@ -94,8 +95,12 @@ def create_user_assertions(mock_database, expected):
 
 @pytest.mark.asyncio
 async def test_create_user(
-    mock_getpass_valid, mock_database, mock_user_info_from_orm, mock_hash_password, mock_get_user_not_exists
-):
+    mock_getpass_valid: None,
+    mock_database: AsyncMock,
+    mock_user_info_from_orm: None,
+    mock_hash_password: None,
+    mock_get_user_not_exists: None,
+) -> None:
     # the happy case with defaults
     parser = get_parser()
     args = parser.parse_args("newuser test@test.com".split())
@@ -113,8 +118,12 @@ async def test_create_user(
 
 @pytest.mark.asyncio
 async def test_create_user_admin_inactive(
-    mock_getpass_valid, mock_database, mock_user_info_from_orm, mock_hash_password, mock_get_user_not_exists
-):
+    mock_getpass_valid: None,
+    mock_database: AsyncMock,
+    mock_user_info_from_orm: None,
+    mock_hash_password: None,
+    mock_get_user_not_exists: None,
+) -> None:
     # the happy case with all flags
     parser = get_parser()
     args = parser.parse_args("newuser test@test.com --admin --inactive".split())
@@ -131,7 +140,7 @@ async def test_create_user_admin_inactive(
 
 
 @pytest.mark.asyncio
-async def test_create_user_no_matching_password(mock_getpass_no_match):
+async def test_create_user_no_matching_password(mock_getpass_no_match: None) -> None:
     parser = get_parser()
     args = parser.parse_args("newuser test@test.com".split())
 
@@ -140,7 +149,9 @@ async def test_create_user_no_matching_password(mock_getpass_no_match):
 
 
 @pytest.mark.asyncio
-async def test_create_user_already_exists(mock_getpass_valid, mock_database, mock_get_user_exists):
+async def test_create_user_already_exists(
+    mock_getpass_valid: None, mock_database: AsyncMock, mock_get_user_exists: None
+) -> None:
     parser = get_parser()
     args = parser.parse_args("newuser test@test.com".split())
 
