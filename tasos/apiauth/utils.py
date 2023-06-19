@@ -7,7 +7,7 @@ import getpass
 
 from tasos.apiauth.auth import get_user_by_email, hash_password
 from tasos.apiauth.db import get_sessionmaker
-from tasos.apiauth.model import UserOrm, UserInfo, Registration
+from tasos.apiauth.model import UserOrm, User, Registration
 
 
 async def _create_user(userargs: argparse.Namespace) -> None:
@@ -46,7 +46,7 @@ async def _create_user(userargs: argparse.Namespace) -> None:
         db.add(user)
         await db.commit()
 
-        print(f"User created successfully: {UserInfo.from_orm(user)}")
+        print(f"User created successfully: {User.from_orm(user)}")
 
 
 def create_user(userargs: argparse.Namespace) -> None:  # pragma: no cover

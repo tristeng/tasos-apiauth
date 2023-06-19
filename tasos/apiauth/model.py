@@ -45,7 +45,7 @@ class UserOrm(Base):
     groups: Mapped[list["GroupOrm"]] = relationship(secondary=usergroup_table)
 
 
-class UserInfo(BaseModel):
+class User(BaseModel):
     """
     The user info FastAPI model - for displaying on the web interface
     """
@@ -61,9 +61,9 @@ class UserInfo(BaseModel):
         orm_mode = True
 
 
-class User(UserInfo):
+class UserInternal(User):
     """
-    The user FastAPI model - the model that mirrors the ORM model
+    The user internal FastAPI model - the model that mirrors the ORM model
     """
 
     hashed_pw: SecretStr
@@ -184,5 +184,5 @@ class ChangePassword(Password):
 
 
 # update forward refs for ORM models
-User.update_forward_refs()
+UserInternal.update_forward_refs()
 Group.update_forward_refs()

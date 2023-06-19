@@ -17,7 +17,7 @@ from tasos.apiauth.auth import (
     get_current_active_user,
 )
 from tasos.apiauth.db import get_db
-from tasos.apiauth.model import Token, Registration, UserOrm, UserInfo, ChangePassword
+from tasos.apiauth.model import Token, Registration, UserOrm, User, ChangePassword
 
 app = FastAPI(
     title="Tasos API Auth Library",
@@ -29,7 +29,7 @@ app = FastAPI(
 @app.post(
     "/auth/register",
     status_code=status.HTTP_201_CREATED,
-    response_model=UserInfo,
+    response_model=User,
     description="Registers a new user",
     tags=["auth"],
 )
@@ -86,9 +86,7 @@ async def login_for_access_token(
     return Token(access_token=create_access_token(data={"sub": user.email}))
 
 
-@app.get(
-    "/auth/whoami", response_model=UserInfo, description="Returns information about the current user", tags=["auth"]
-)
+@app.get("/auth/whoami", response_model=User, description="Returns information about the current user", tags=["auth"])
 async def current_user_info(current_user: Annotated[UserOrm, Depends(get_current_active_user)]) -> UserOrm:
     """
     Returns information about the current user
