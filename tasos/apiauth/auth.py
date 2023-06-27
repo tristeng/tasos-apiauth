@@ -11,10 +11,9 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from tasos.apiauth.config import get_apiauth_settings
-from tasos.apiauth.db import get_db
+from tasos.apiauth.db import DatabaseDepends
 from tasos.apiauth.model import UserOrm
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -64,7 +63,7 @@ async def get_user_by_email(email: str, db: AsyncSession) -> UserOrm | None:
     :return: the user object or None if the user doesn't exist
     """
     # load the groups at the same time
-    result = await db.execute(select(UserOrm).options(selectinload(UserOrm.groups)).filter(UserOrm.email == email))
+    result = await db.execute(select(UserOrm).filter(UserOrm.email == email))
     return result.scalars().first()
 
 
@@ -84,9 +83,7 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
     return user
 
 
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(get_db)]
-) -> UserOrm:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DatabaseDepends) -> UserOrm:
     """Gets the current user from the database using their JWT token
 
     :param token: the JWT token

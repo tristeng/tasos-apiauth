@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from tasos.apiauth.model import UserOrm
-from tasos.apiauth.utils import _create_user, get_parser  # noqa
+from tasos.apiauth.cli import _create_user, get_parser  # noqa
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def mock_database(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     def mock_get_sessionmaker() -> MagicMock:
         return mock_session_maker
 
-    monkeypatch.setattr("tasos.apiauth.utils.get_sessionmaker", mock_get_sessionmaker)
+    monkeypatch.setattr("tasos.apiauth.cli.get_sessionmaker", mock_get_sessionmaker)
 
     return mock_db
 
@@ -49,7 +49,7 @@ def mock_user_model(monkeypatch: pytest.MonkeyPatch) -> None:
     def mock_user_from_orm(user: UserOrm) -> str:  # noqa
         return "user info"
 
-    monkeypatch.setattr("tasos.apiauth.utils.User.from_orm", mock_user_from_orm)
+    monkeypatch.setattr("tasos.apiauth.cli.User.from_orm", mock_user_from_orm)
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def mock_hash_password(monkeypatch: pytest.MonkeyPatch) -> None:
     def mock_hash_password(plain: str) -> str:  # noqa
         return plain
 
-    monkeypatch.setattr("tasos.apiauth.utils.hash_password", mock_hash_password)
+    monkeypatch.setattr("tasos.apiauth.cli.hash_password", mock_hash_password)
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def mock_get_user_not_exists(monkeypatch: pytest.MonkeyPatch) -> None:
         # return None to signify the user hasn't been registered yet
         return None
 
-    monkeypatch.setattr("tasos.apiauth.utils.get_user_by_email", mock_get_user_by_email)
+    monkeypatch.setattr("tasos.apiauth.cli.get_user_by_email", mock_get_user_by_email)
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def mock_get_user_exists(monkeypatch: pytest.MonkeyPatch) -> None:
             is_admin=False,
         )
 
-    monkeypatch.setattr("tasos.apiauth.utils.get_user_by_email", mock_get_user_by_email)
+    monkeypatch.setattr("tasos.apiauth.cli.get_user_by_email", mock_get_user_by_email)
 
 
 def create_user_assertions(mock_database: AsyncMock, expected: UserOrm) -> None:

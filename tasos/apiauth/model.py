@@ -47,7 +47,7 @@ class UserOrm(Base):
 
 class User(BaseModel):
     """
-    The user info FastAPI model - for displaying on the web interface
+    The user info FastAPI model - for public display
     """
 
     id: int

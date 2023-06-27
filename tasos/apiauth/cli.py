@@ -49,12 +49,45 @@ async def _create_user(userargs: argparse.Namespace) -> None:
         print(f"User created successfully: {User.from_orm(user)}")
 
 
+async def _edit_user(userargs: argparse.Namespace) -> None:
+    """The async version of edit_user
+
+    :param userargs: the arguments
+    :raises ValueError: if the user does not exist
+    """
+    async_session = get_sessionmaker()
+    async with async_session() as db:
+        # check if the user already exists
+        user = await get_user_by_email(userargs.email, db)
+        if not user:
+            raise ValueError("A user with this email does not exist")
+
+        # update the user
+        if userargs.admin is not None:
+            user.is_admin = userargs.admin
+        if userargs.active is not None:
+            user.is_active = userargs.active
+
+        db.add(user)
+        await db.commit()
+
+        print(f"User updated successfully: {User.from_orm(user)}")
+
+
 def create_user(userargs: argparse.Namespace) -> None:  # pragma: no cover
     """Creates a new user
 
     :param userargs: the arguments
     """
     asyncio.run(_create_user(userargs))
+
+
+def edit_user(userargs: argparse.Namespace) -> None:  # pragma: no cover
+    """Edits an existing user
+
+    :param userargs: the arguments
+    """
+    asyncio.run(_edit_user(userargs))
 
 
 def get_parser() -> argparse.ArgumentParser:  # pragma: no cover
@@ -69,13 +102,20 @@ def get_parser() -> argparse.ArgumentParser:  # pragma: no cover
     subparsers = parser.add_subparsers(required=True)
 
     # create a new user
-    parser_user = subparsers.add_parser("newuser", help="creates a new user")
-    parser_user.add_argument("email", help="the email of the user")
-    parser_user.add_argument("-a", "--admin", action="store_true", help="use this flag if the user is an admin")
-    parser_user.add_argument(
+    parser_create_user = subparsers.add_parser("newuser", help="creates a new user")
+    parser_create_user.add_argument("email", help="the email of the user")
+    parser_create_user.add_argument("-a", "--admin", action="store_true", help="use this flag if the user is an admin")
+    parser_create_user.add_argument(
         "-i", "--inactive", action="store_false", help="use this flag to create the user as inactive"
     )
-    parser_user.set_defaults(func=create_user)
+    parser_create_user.set_defaults(func=create_user)
+
+    # edit an existing user
+    parser_edit_user = subparsers.add_parser("edituser", help="edits an existing user")
+    parser_edit_user.add_argument("email", help="the email of an existing user")
+    parser_edit_user.add_argument("--admin", action=argparse.BooleanOptionalAction, help="admin status toggle")
+    parser_edit_user.add_argument("--active", action=argparse.BooleanOptionalAction, help="active status toggle")
+    parser_edit_user.set_defaults(func=edit_user)
 
     return parser
 

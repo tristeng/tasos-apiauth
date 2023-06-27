@@ -21,16 +21,10 @@ Pre-requisites:
 database should work)
 - [Uvicorn](https://www.uvicorn.org/) for running the app
 
-To try this library out in its current state, clone the repository locally and use [Poetry](https://python-poetry.org/)
-to install the project as a dependency in your own project, e.g. if you clone the repository adjacent to your project, 
-you can run the following:
+To try this library out in its current state, use [Poetry](https://python-poetry.org/) to install the project as a 
+dependency in your own project, e.g. you can run the following:
 ```bash
-poetry add ../tasos-apiauth/
-```
-
-Also install the other dependencies:
-```bash
-poetry add uvicorn aiosqlite alembic
+poetry add https://github.com/tristeng/tasos-apiauth.git
 ```
 
 Create a .env file in the root of your project and fill in the values (or set them in your environment):
@@ -72,17 +66,36 @@ alembic upgrade head
 
 Create an admin user for yourself with the included CLI, and follow the prompts to choose a password:
 ```bash
-python -m tasos.apiauth.utils newuser you@website.com --admin
+python -m tasos.apiauth.cli newuser you@website.com --admin
 ```
 
-Create a main.py file in the root of your project and add the following:
+Create a main.py file in the root of your project and create your FastAPI app:
 ```python
-from tasos.apiauth.api import app
+from fastapi import FastAPI
+from tasos.apiauth.api import add_all_endpoints_to_app
 
-# modify the app as needed, adding new endpoints, adding startup and shutdown events, etc.
+# create your app as you like
+app = FastAPI()
+
+# add the endpoints to your app using the default URLs
+add_all_endpoints_to_app(app)
 ```
 
-Run the app:
+If you only want to add select endpoints with custom base URLs:
+```python
+from fastapi import FastAPI
+
+from tasos.apiauth.api import add_base_endpoints_to_app, add_user_endpoints_to_app
+
+# create your app as you like
+app = FastAPI()
+
+# add only the endpoints you want
+add_base_endpoints_to_app(app, path="/api/auth")
+add_user_endpoints_to_app(app, path="/api/users")
+```
+
+Run the app in development mode:
 ```bash
 uvicorn main:app --reload
 ```

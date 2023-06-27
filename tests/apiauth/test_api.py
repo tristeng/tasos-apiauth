@@ -5,14 +5,20 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tasos.apiauth.api import app
+from tasos.apiauth.api import add_all_endpoints_to_app
 from tasos.apiauth.auth import hash_password
 from tasos.apiauth.db import get_engine, get_sessionmaker
 from tasos.apiauth.model import Base, UserOrm
+
+
+# test app
+app = FastAPI()
+add_all_endpoints_to_app(app)
 
 
 @pytest_asyncio.fixture

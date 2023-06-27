@@ -11,11 +11,11 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.97.0"
+fastapi = "^0.98.0"
 python-multipart = "^0.0.6"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.16"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.17"}
 pydantic = {extras = ["email", "dotenv"], version = "^1.10.9"}
 
 [tool.poetry.group.dev.dependencies]
@@ -31,6 +31,7 @@ flake8 = "^6.0.0"
 types-python-jose = "^3.3.4.7"
 types-passlib = "^1.7.7.12"
 black = "^23.3.0"
+uvicorn = "^0.22.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -59,7 +60,7 @@ source = [
 
 [tool.coverage.report]
 omit = [
-    "tasos/apiauth/api.py",  # this file is tested with the fastapi test client, so coverage isn't reported
+    "tasos/apiauth/api/*",  # this file is tested with the fastapi test client, so coverage isn't reported
 ]
 show_missing = true
 
