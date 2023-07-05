@@ -9,6 +9,11 @@ asyncio.
 
 **NOTE: This is a work in progress and is not ready for production use.**
 
+## Motivation
+I wanted to create a library that would allow me to quickly setup authentication and authorization for a new web 
+application. I also wanted to test out [GitHub Copilot](https://github.com/features/copilot) - this code and portions of
+the README were generated with Copilot's AI assistance.
+
 ## Installation
 Coming soon...
 
@@ -85,14 +90,18 @@ If you only want to add select endpoints with custom base URLs:
 ```python
 from fastapi import FastAPI
 
-from tasos.apiauth.api import add_base_endpoints_to_app, add_user_endpoints_to_app
+from tasos.apiauth.api import add_base_endpoints_to_app, add_user_endpoints_to_app, add_group_endpoints_to_app
 
 # create your app as you like
 app = FastAPI()
 
-# add only the endpoints you want
+# add only the endpoints you want at the paths you desire
 add_base_endpoints_to_app(app, path="/api/auth")
 add_user_endpoints_to_app(app, path="/api/users")
+add_group_endpoints_to_app(app, path="/api/groups")
+
+# you could also add all of them at the default paths
+# add_all_endpoints_to_app(app)
 ```
 
 Run the app in development mode:
@@ -102,3 +111,25 @@ uvicorn main:app --reload
 
 You should now be able to navigate to http://localhost:8000/docs to see the Swagger UI and use its interactive features
 to interact with the API. You can also navigate to http://localhost:8000/redoc to see the ReDoc UI.
+
+## Development
+To develop this library, clone the repo and install the dependencies with Poetry:
+```bash
+poetry install
+```
+
+### Testing
+The tests are separated into unit and integration tests. The unit tests are run against a mocked database and the 
+integration tests are run against a real database (SQLite). The integration tests are slower and the unit test mocking
+can interfere with the integration tests, so they are separated. The integration tests are marked with the 
+`@pytest.mark.integration` decorator and can be run separately from the unit tests.
+
+To run the unit tests:
+```bash
+poetry run pytest -m "not integration"
+```
+
+To run the integration tests:
+```bash
+poetry run pytest -m "integration"
+```

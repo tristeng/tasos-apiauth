@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from tasos.apiauth.model import UserOrm
-from tasos.apiauth.cli import _create_user, get_parser  # noqa
+from tasos.apiauth.cli import _create_user, get_parser, _edit_user  # noqa
 
 
 @pytest.fixture
@@ -74,6 +74,7 @@ def mock_get_user_exists(monkeypatch: pytest.MonkeyPatch) -> None:
     async def mock_get_user_by_email(email: str, session: AsyncMock) -> UserOrm:  # noqa
         # return a user to signify this email has already been registered
         return UserOrm(
+            id=4,
             email="test@test.com",
             hashed_pw="Abcdef123!",
             is_active=True,
@@ -157,3 +158,31 @@ async def test_create_user_already_exists(
 
     with pytest.raises(ValueError, match="A user with this email is already registered"):
         await _create_user(args)
+
+
+@pytest.mark.asyncio
+async def test_edit_user(mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --admin --no-active".split())
+    await _edit_user(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+    assert actual.email == "test@test.com"
+    assert actual.is_active is False
+    assert actual.is_admin is True
+    mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_not_exists(
+    mock_database: AsyncMock, mock_get_user_not_exists: None, mock_user_model: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser who@isthis.com --admin".split())
+    with pytest.raises(ValueError, match="A user with this email does not exist"):
+        await _edit_user(args)

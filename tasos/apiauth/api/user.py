@@ -6,14 +6,20 @@ from typing import Annotated, Sequence
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select, func, asc, desc
+from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tasos.apiauth.auth import get_current_admin_user
 from tasos.apiauth.db import DatabaseDepends
 from tasos.apiauth.model import User, UserOrm
-from tasos.apiauth.helpers import Paginated, BaseFilterQueryParams, OrderDirection
+from tasos.apiauth.helpers import (
+    Paginated,
+    BaseFilterQueryParams,
+    validate_path,
+    get_paginated_results,
+    BaseOrderQueryParams,
+)
 
 
 class UserQueryParams(BaseFilterQueryParams):
@@ -35,13 +41,12 @@ class UserOrderColumns(Enum):
     created = "created"
 
 
-class UserOrderQueryParams(BaseModel):
+class UserOrderQueryParams(BaseOrderQueryParams):
     """
     The order by query parameters for the user model
     """
 
     order_by: UserOrderColumns = UserOrderColumns.id
-    order_dir: OrderDirection = OrderDirection.asc
 
 
 class UserModify(BaseModel):
@@ -87,12 +92,9 @@ def add_user_endpoints_to_app(
 
     :param app: The FastAPI app
     :param path: The path prefix to add the endpoints to
-    :param dependencies: Any dependencies to add to the encpoints, defaults to current admin user
+    :param dependencies: Any dependencies to add to the endpoints, defaults to current admin user
     """
-    assert path == "" or path.startswith("/"), "Path must start with '/'"
-
-    # remove any trailing slashes from the path
-    path = path.rstrip("/")
+    path = validate_path(path)
 
     # by default, we restrict the endpoints to admin users
     if dependencies is None:
@@ -120,19 +122,7 @@ def add_user_endpoints_to_app(
         if query.is_admin is not None:
             where_clauses.append(UserOrm.is_admin == query.is_admin)
 
-        # query for the count that matches the query
-        count = await db.execute(select(func.count(UserOrm.id)).where(*where_clauses))
-
-        # fetch the items filtered by the query
-        order_clause = (
-            asc(order.order_by.value) if order.order_dir == OrderDirection.asc else desc(order.order_by.value)
-        )
-
-        items = await db.execute(
-            select(UserOrm).where(*where_clauses).limit(query.limit).offset(query.offset).order_by(order_clause)
-        )
-
-        return Paginated(total=count.scalar(), items=[item for item in items.scalars()])
+        return await get_paginated_results(where_clauses, query, order, UserOrm, db)
 
     @app.get(
         path + "/users/{user_id}",

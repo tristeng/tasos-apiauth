@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tasos.apiauth.api import add_all_endpoints_to_app
+from tasos.apiauth.api import add_base_endpoints_to_app
 from tasos.apiauth.auth import hash_password
 from tasos.apiauth.db import get_engine, get_sessionmaker
 from tasos.apiauth.model import Base, UserOrm
@@ -18,7 +18,7 @@ from tasos.apiauth.model import Base, UserOrm
 
 # test app
 app = FastAPI()
-add_all_endpoints_to_app(app)
+add_base_endpoints_to_app(app)
 
 
 @pytest_asyncio.fixture
@@ -57,6 +57,7 @@ TEST_URL = "http://test"
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         url = "/auth/register"
@@ -79,6 +80,7 @@ async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_login_for_access_token(db_engine: AsyncEngine, register_payload: dict[str, str]) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # test login with valid credentials
@@ -110,6 +112,7 @@ async def test_login_for_access_token(db_engine: AsyncEngine, register_payload: 
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_current_user_info(db_engine: AsyncEngine) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # login to get credentials
@@ -127,6 +130,7 @@ async def test_current_user_info(db_engine: AsyncEngine) -> None:  # noqa
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_change_password(db_engine: AsyncEngine) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # login to get credentials

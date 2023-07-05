@@ -12,7 +12,11 @@ from tasos.apiauth.config import get_apiauth_settings
 
 
 class Base(AsyncAttrs, DeclarativeBase):
-    pass
+    """
+    The base ORM model - all ORM models should inherit from this and it contains the id column
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True)
 
 
 # this is the table for the many-to-many group-permission relationship
@@ -33,7 +37,6 @@ class UserOrm(Base):
 
     __tablename__ = "user"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), index=True, unique=True)
     hashed_pw: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(create_constraint=True, name="is_active_bool"))
@@ -78,7 +81,6 @@ class GroupOrm(Base):
 
     __tablename__ = "group"
 
-    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), index=True, nullable=False, unique=True)
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
 
@@ -107,7 +109,6 @@ class PermissionOrm(Base):
 
     __tablename__ = "permission"
 
-    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     group_id = mapped_column(ForeignKey("group.id"))
     name: Mapped[str] = mapped_column(String(100), index=True, nullable=False, unique=True)
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())

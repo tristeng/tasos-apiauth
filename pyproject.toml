@@ -50,9 +50,12 @@ env = [
     "APIAUTH_ACCESS_TOKEN_EXPIRE_MINUTES=15",
     "APIAUTH_DATABASE_URL=sqlite+aiosqlite://?check_same_thread=false",
 ]
+markers = [
+    "integration: mark test as an integration test.",
+]
 
 [tool.coverage.run]
-command_line = "-m pytest tests"
+command_line = "-m pytest tests -m 'not integration'"
 branch = true
 source = [
     "tasos",
