@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import Result
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tasos.apiauth.api.permission import PermissionQueryParams, PermissionOrderQueryParams, PermissionOrderColumns
@@ -48,7 +48,7 @@ def mock_db_get_object() -> AsyncMock:
 @pytest.fixture
 def mock_db_get_object_not_exists() -> AsyncMock:
     item_result = MagicMock(Result)
-    item_result.scalar_one.side_effect = NoResultFound
+    item_result.scalar_one.side_effect = [NoResultFound, MultipleResultsFound]
 
     mock_db = AsyncMock(AsyncSession)
     mock_db.execute.return_value = item_result
@@ -101,12 +101,18 @@ async def test_get_object_from_db_by_id_or_name(mock_db_get_object: AsyncMock):
 
 
 @pytest.mark.asyncio
-async def test_get_object_from_db_by_id_or_name_not_exists(mock_db_get_object_not_exists: AsyncMock):
+async def test_get_object_from_db_by_id_or_name_invalid(mock_db_get_object_not_exists: AsyncMock):
     with pytest.raises(HTTPException) as exc:
         await get_object_from_db_by_id_or_name(12, mock_db_get_object_not_exists, "Group", GroupOrm)
 
     assert exc.value.status_code == 404
     assert exc.value.detail == "Group with ID 12 not found"
+
+    with pytest.raises(HTTPException) as exc:
+        await get_object_from_db_by_id_or_name("too many results", mock_db_get_object_not_exists, "Group", GroupOrm)
+
+    assert exc.value.status_code == 422
+    assert exc.value.detail == "Multiple Groups found for name 'too many results'"
 
 
 @pytest.mark.asyncio

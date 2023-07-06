@@ -85,7 +85,7 @@ class GroupOrm(Base):
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
 
     # relationships
-    permissions: Mapped[list["PermissionOrm"]] = relationship(back_populates="group")
+    permissions: Mapped[list["PermissionOrm"]] = relationship(back_populates="group", lazy="selectin")
 
 
 class Group(BaseModel):
@@ -123,7 +123,7 @@ class Permission(BaseModel):
     """
 
     id: int
-    group: Group
+    group_id: int  # NOTE: only referencing group by id to avoid recursion errors from pydantic - is there a better way?
     name: str
     created: datetime
 

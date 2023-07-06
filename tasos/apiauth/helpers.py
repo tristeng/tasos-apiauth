@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from pydantic.generics import GenericModel
 from sqlalchemy import select, func, asc, desc
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import OperatorExpression
 from starlette import status
@@ -106,7 +106,7 @@ async def get_object_from_db_by_id_or_name(id_or_name: int | str, db: AsyncSessi
     :param name: The name of the object, e.g. Group, Permission, etc.
     :param orm: The ORM model to query against
     :return: The object that matches the given id or name
-    :raises HTTPException: If the object is not found
+    :raises HTTPException: If the object is not found or multiple objects are found
     """
     if isinstance(id_or_name, int):
         results = await db.execute(select(orm).where(orm.id == id_or_name))
@@ -123,3 +123,7 @@ async def get_object_from_db_by_id_or_name(id_or_name: int | str, db: AsyncSessi
         return results.scalar_one()
     except NoResultFound:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_msg)
+    except MultipleResultsFound:  # should only be possible for models where the name is not unique
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Multiple {name}s found for name '{id_or_name}'"
+        )

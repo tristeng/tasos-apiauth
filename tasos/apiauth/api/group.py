@@ -4,8 +4,10 @@
 from enum import Enum
 from typing import Sequence, Annotated
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
+from starlette import status
 
 from tasos.apiauth.auth import get_current_admin_user
 from tasos.apiauth.db import DatabaseDepends
@@ -126,8 +128,15 @@ def add_group_endpoints_to_app(
         """
         Creates a new group
         """
+        # make sure the group name doesn't already exist
+        result = await db.execute(select(GroupOrm).filter(GroupOrm.name == group.name))
+        if result.scalars().first() is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A group with this name already exists")
+
+        # create the group
         group_orm = GroupOrm(name=group.name)
         db.add(group_orm)
         await db.commit()
-        await db.refresh(group_orm)
+        await db.refresh(group_orm)  # refresh the group to get the permissions
+
         return Group.from_orm(group_orm)
