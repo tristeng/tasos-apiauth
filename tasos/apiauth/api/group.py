@@ -4,7 +4,9 @@
 from enum import Enum
 from typing import Sequence, Annotated
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, HTTPException
+from fastapi.params import Depends
+
 from pydantic import BaseModel
 from sqlalchemy import select
 from starlette import status

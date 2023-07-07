@@ -4,7 +4,8 @@
 from enum import Enum
 from typing import Annotated, Sequence
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
+from fastapi.params import Depends
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
@@ -75,11 +76,9 @@ async def get_user_from_db_by_id_or_email(user_id: int | EmailStr, db: AsyncSess
         not_found_msg = f"User with email '{user_id}' not found"
 
     try:
-        user = user.scalar_one()
+        return user.scalar_one()
     except NoResultFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=not_found_msg)
-
-    return user
 
 
 def add_user_endpoints_to_app(

@@ -2,7 +2,7 @@
 # Copyright Tristen Georgiou 2023
 #
 from enum import Enum
-from typing import TypeVar, Generic, Type
+from typing import TypeVar, Generic, Type, Any
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
@@ -10,7 +10,7 @@ from pydantic.generics import GenericModel
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.elements import OperatorExpression
+from sqlalchemy.sql.elements import UnaryExpression
 from starlette import status
 
 from tasos.apiauth.model import Base
@@ -68,12 +68,12 @@ def validate_path(path: str) -> str:
 
 
 async def get_paginated_results(
-    where_clauses: list[OperatorExpression],
+    where_clauses: list[Any],
     query: BaseFilterQueryParams,
     order: BaseOrderQueryParams,
     model: Type[Base],
     db: AsyncSession,
-) -> Paginated:
+) -> Paginated[Any]:
     """
     Gets the paginated results for the given query
 
@@ -88,16 +88,20 @@ async def get_paginated_results(
     count = await db.execute(select(func.count(model.id)).where(*where_clauses))
 
     # fetch the items filtered by the query
-    order_clause = asc(order.order_by.value) if order.order_dir == OrderDirection.asc else desc(order.order_by.value)
+    order_clause: UnaryExpression[Any] = (
+        asc(order.order_by.value) if order.order_dir == OrderDirection.asc else desc(order.order_by.value)
+    )
 
     items = await db.execute(
         select(model).where(*where_clauses).limit(query.limit).offset(query.offset).order_by(order_clause)
     )
 
-    return Paginated(total=count.scalar(), items=[item for item in items.scalars()])
+    return Paginated(total=count.scalar_one(), items=[item for item in items.scalars()])
 
 
-async def get_object_from_db_by_id_or_name(id_or_name: int | str, db: AsyncSession, name: str, orm: Type[Base]) -> Base:
+async def get_object_from_db_by_id_or_name(
+    id_or_name: int | str, db: AsyncSession, name: str, orm: Type[Base]
+) -> Type[BaseModel] | Base:
     """
     Get the given object by its database id or name
 

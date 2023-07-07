@@ -9,7 +9,8 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tasos.apiauth.api import add_base_endpoints_to_app, add_group_endpoints_to_app
+from tasos.apiauth.api.base import add_base_endpoints_to_app
+from tasos.apiauth.api.group import add_group_endpoints_to_app
 from tasos.apiauth.auth import hash_password
 from tasos.apiauth.db import get_engine, get_sessionmaker
 from tasos.apiauth.model import Base, UserOrm, GroupOrm, PermissionOrm

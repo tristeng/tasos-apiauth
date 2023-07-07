@@ -18,7 +18,7 @@ from tasos.apiauth.model import PermissionOrm, GroupOrm, Group, UserOrm
 @pytest.fixture
 def mock_db() -> AsyncMock:
     count_result = MagicMock(Result)
-    count_result.scalar.return_value = 3
+    count_result.scalar_one.return_value = 3
 
     item_result = MagicMock(Result)
     item_result.scalars.return_value = [
@@ -55,7 +55,7 @@ def mock_db_get_object_not_exists() -> AsyncMock:
     return mock_db
 
 
-def test_validate_path():
+def test_validate_path() -> None:
     assert validate_path("/admin/") == "/admin"
     assert validate_path("/admin//") == "/admin"
     assert validate_path("/admin") == "/admin"
@@ -66,7 +66,7 @@ def test_validate_path():
 
 
 @pytest.mark.asyncio
-async def test_get_paginated_results(mock_db: AsyncMock):
+async def test_get_paginated_results(mock_db: AsyncMock) -> None:
     where_clauses = [PermissionOrm.name.like("some_permission_name"), PermissionOrm.group_id == 7]
     query = PermissionQueryParams(limit=10, offset=10)
     order = PermissionOrderQueryParams(order_by=PermissionOrderColumns.name, order_dir=OrderDirection.desc)
@@ -86,22 +86,20 @@ async def test_get_paginated_results(mock_db: AsyncMock):
 
 
 @pytest.mark.asyncio
-async def test_get_object_from_db_by_id_or_name(mock_db_get_object: AsyncMock):
+async def test_get_object_from_db_by_id_or_name(mock_db_get_object: AsyncMock) -> None:
     # test get by integer id
-    actual = await get_object_from_db_by_id_or_name(1, mock_db_get_object, "Group", GroupOrm)
-    actual = Group.from_orm(actual)
+    actual = Group.from_orm(await get_object_from_db_by_id_or_name(1, mock_db_get_object, "Group", GroupOrm))
     assert actual.id == 1
     assert actual.name == "group1"
 
     # test get by string name
-    actual = await get_object_from_db_by_id_or_name("group2", mock_db_get_object, "Group", GroupOrm)
-    actual = Group.from_orm(actual)
+    actual = Group.from_orm(await get_object_from_db_by_id_or_name("group2", mock_db_get_object, "Group", GroupOrm))
     assert actual.id == 2
     assert actual.name == "group2"
 
 
 @pytest.mark.asyncio
-async def test_get_object_from_db_by_id_or_name_invalid(mock_db_get_object_not_exists: AsyncMock):
+async def test_get_object_from_db_by_id_or_name_invalid(mock_db_get_object_not_exists: AsyncMock) -> None:
     with pytest.raises(HTTPException) as exc:
         await get_object_from_db_by_id_or_name(12, mock_db_get_object_not_exists, "Group", GroupOrm)
 
@@ -116,7 +114,7 @@ async def test_get_object_from_db_by_id_or_name_invalid(mock_db_get_object_not_e
 
 
 @pytest.mark.asyncio
-async def test_get_object_from_db_by_id_or_name_invalid_model():
+async def test_get_object_from_db_by_id_or_name_invalid_model() -> None:
     # test case where the input ORM model doesn't have the name attribute
     with pytest.raises(HTTPException) as exc:
         await get_object_from_db_by_id_or_name("this won't work!", AsyncMock(AsyncSession), "User", UserOrm)

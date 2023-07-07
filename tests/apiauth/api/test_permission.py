@@ -1,14 +1,13 @@
 #
 # Copyright Tristen Georgiou 2023
 #
-# test app
-from typing import AsyncGenerator
-
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tasos.apiauth.api import add_base_endpoints_to_app, add_permission_endpoints_to_app
+from tasos.apiauth.api.base import add_base_endpoints_to_app
+from tasos.apiauth.api.permission import add_permission_endpoints_to_app
 from .test_base import TEST_URL
 
 # re-use the db_engine fixture from the group tests
@@ -21,7 +20,7 @@ add_permission_endpoints_to_app(app)
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_list_permissions(db_engine: AsyncGenerator) -> None:  # noqa
+async def test_list_permissions(db_engine: AsyncEngine) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
@@ -42,7 +41,7 @@ async def test_list_permissions(db_engine: AsyncGenerator) -> None:  # noqa
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_get_permission(db_engine: AsyncGenerator) -> None:  # noqa
+async def test_get_permission(db_engine: AsyncEngine) -> None:  # noqa
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"

@@ -2,9 +2,11 @@
 # Copyright Tristen Georgiou 2023
 #
 from enum import Enum
-from typing import Sequence, Annotated
+from typing import Sequence, Annotated, Any
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
+from fastapi.params import Depends
+from sqlalchemy import BinaryExpression, ColumnElement
 
 from tasos.apiauth.auth import get_current_admin_user
 from tasos.apiauth.db import DatabaseDepends
@@ -83,7 +85,7 @@ def add_permission_endpoints_to_app(
         Returns a list of the groups based on the query parameters
         """
         # create the where clauses
-        where_clauses = []
+        where_clauses: list[ColumnElement[Any] | BinaryExpression[Any]] = []
         if query.name is not None:
             where_clauses.append(PermissionOrm.name.like(query.name))
         if query.group_id is not None:

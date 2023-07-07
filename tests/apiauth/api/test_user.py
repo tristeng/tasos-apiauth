@@ -6,7 +6,8 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tasos.apiauth.api import add_base_endpoints_to_app, add_user_endpoints_to_app
+from tasos.apiauth.api.base import add_base_endpoints_to_app
+from tasos.apiauth.api.user import add_user_endpoints_to_app
 from .test_base import db_engine, TEST_URL  # noqa
 
 app = FastAPI()

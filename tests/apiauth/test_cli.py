@@ -98,7 +98,7 @@ def create_user_assertions(mock_database: AsyncMock, expected: UserOrm) -> None:
 async def test_create_user(
     mock_getpass_valid: None,
     mock_database: AsyncMock,
-    mock_user_model,
+    mock_user_model: None,
     mock_hash_password: None,
     mock_get_user_not_exists: None,
 ) -> None:
@@ -121,7 +121,7 @@ async def test_create_user(
 async def test_create_user_admin_inactive(
     mock_getpass_valid: None,
     mock_database: AsyncMock,
-    mock_user_model,
+    mock_user_model: None,
     mock_hash_password: None,
     mock_get_user_not_exists: None,
 ) -> None:
