@@ -101,7 +101,7 @@ def add_user_endpoints_to_app(
         dependencies = [Depends(get_current_admin_user)]
 
     @app.get(
-        path + "/users/",
+        path + "/users",
         response_model=Paginated[User],
         description="Fetches the users",
         tags=["admin"],
