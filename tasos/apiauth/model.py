@@ -12,10 +12,14 @@ from tasos.apiauth.config import get_apiauth_settings
 
 
 class Base(AsyncAttrs, DeclarativeBase):
-    pass
+    """
+    The base ORM model - all ORM models should inherit from this and it contains the id column
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True)
 
 
-# this is the table for the many-to-many group-permission relationship
+# these are the tables for the many-to-many group-permission relationship
 # https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many
 # "note for a Core table, we use the sqlalchemy.Column construct, not sqlalchemy.orm.mapped_column"
 usergroup_table = Table(
@@ -26,6 +30,14 @@ usergroup_table = Table(
 )
 
 
+grouppermissions_table = Table(
+    "grouppermission",
+    Base.metadata,
+    Column("group_id", ForeignKey("group.id")),
+    Column("permission_id", ForeignKey("permission.id")),
+)
+
+
 class UserOrm(Base):
     """
     The User ORM model
@@ -33,7 +45,6 @@ class UserOrm(Base):
 
     __tablename__ = "user"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), index=True, unique=True)
     hashed_pw: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(create_constraint=True, name="is_active_bool"))
@@ -42,12 +53,12 @@ class UserOrm(Base):
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
 
     # relationships
-    groups: Mapped[list["GroupOrm"]] = relationship(secondary=usergroup_table)
+    groups: Mapped[list["GroupOrm"]] = relationship(secondary=usergroup_table, lazy="selectin")
 
 
-class UserInfo(BaseModel):
+class User(BaseModel):
     """
-    The user info FastAPI model - for displaying on the web interface
+    The user info FastAPI model - for public display
     """
 
     id: int
@@ -61,9 +72,9 @@ class UserInfo(BaseModel):
         orm_mode = True
 
 
-class User(UserInfo):
+class UserInternal(User):
     """
-    The user FastAPI model - the model that mirrors the ORM model
+    The user internal FastAPI model - the model that mirrors the ORM model
     """
 
     hashed_pw: SecretStr
@@ -78,12 +89,11 @@ class GroupOrm(Base):
 
     __tablename__ = "group"
 
-    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), index=True, nullable=False, unique=True)
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
 
     # relationships
-    permissions: Mapped[list["PermissionOrm"]] = relationship(back_populates="group")
+    permissions: Mapped[list["PermissionOrm"]] = relationship(secondary=grouppermissions_table, lazy="selectin")
 
 
 class Group(BaseModel):
@@ -107,13 +117,8 @@ class PermissionOrm(Base):
 
     __tablename__ = "permission"
 
-    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
-    group_id = mapped_column(ForeignKey("group.id"))
     name: Mapped[str] = mapped_column(String(100), index=True, nullable=False, unique=True)
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
-
-    # relationships
-    group: Mapped[GroupOrm] = relationship(back_populates="permissions")
 
 
 class Permission(BaseModel):
@@ -122,7 +127,6 @@ class Permission(BaseModel):
     """
 
     id: int
-    group: Group
     name: str
     created: datetime
 
@@ -184,5 +188,6 @@ class ChangePassword(Password):
 
 
 # update forward refs for ORM models
-User.update_forward_refs()
+UserInternal.update_forward_refs()
 Group.update_forward_refs()
+Permission.update_forward_refs()

@@ -11,12 +11,12 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.97.0"
+fastapi = "^0.99.1"
 python-multipart = "^0.0.6"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.16"}
-pydantic = {extras = ["email", "dotenv"], version = "^1.10.9"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.18"}
+pydantic = {extras = ["email", "dotenv"], version = "^1.10.11"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
@@ -31,6 +31,7 @@ flake8 = "^6.0.0"
 types-python-jose = "^3.3.4.7"
 types-passlib = "^1.7.7.12"
 black = "^23.3.0"
+uvicorn = "^0.22.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -49,9 +50,12 @@ env = [
     "APIAUTH_ACCESS_TOKEN_EXPIRE_MINUTES=15",
     "APIAUTH_DATABASE_URL=sqlite+aiosqlite://?check_same_thread=false",
 ]
+markers = [
+    "integration: mark test as an integration test.",
+]
 
 [tool.coverage.run]
-command_line = "-m pytest tests"
+command_line = "-m pytest tests -m 'not integration'"
 branch = true
 source = [
     "tasos",
@@ -59,7 +63,7 @@ source = [
 
 [tool.coverage.report]
 omit = [
-    "tasos/apiauth/api.py",  # this file is tested with the fastapi test client, so coverage isn't reported
+    "tasos/apiauth/api/*",  # this file is tested with the fastapi test client, so coverage isn't reported
 ]
 show_missing = true
 

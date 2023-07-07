@@ -3,7 +3,9 @@
 #
 from collections.abc import AsyncGenerator
 from functools import cache
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from tasos.apiauth.config import get_apiauth_settings
@@ -52,3 +54,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:  # pragma: no cover
     async_session = get_sessionmaker()
     async with async_session() as session:
         yield session
+
+
+DatabaseDepends = Annotated[AsyncSession, Depends(get_db)]
