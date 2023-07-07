@@ -1,7 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
-from enum import Enum
+from enum import StrEnum
 from typing import Sequence, Annotated, Any
 
 from fastapi import FastAPI
@@ -28,17 +28,15 @@ class PermissionQueryParams(BaseFilterQueryParams):
     """
 
     name: str | None = None
-    group_id: int | None = None
 
 
-class PermissionOrderColumns(Enum):
+class PermissionOrderColumns(StrEnum):
     """
     The permission order columns
     """
 
     id = "id"
     name = "name"
-    group_id = "group_id"
     created = "created"
 
 
@@ -47,7 +45,7 @@ class PermissionOrderQueryParams(BaseOrderQueryParams):
     The order by query parameters for the permission model - defaults to group id ascending
     """
 
-    order_by: PermissionOrderColumns = PermissionOrderColumns.group_id
+    order_by: PermissionOrderColumns = PermissionOrderColumns.id
     order_dir: OrderDirection = OrderDirection.asc
 
 
@@ -88,8 +86,6 @@ def add_permission_endpoints_to_app(
         where_clauses: list[ColumnElement[Any] | BinaryExpression[Any]] = []
         if query.name is not None:
             where_clauses.append(PermissionOrm.name.like(query.name))
-        if query.group_id is not None:
-            where_clauses.append(PermissionOrm.group_id == query.group_id)
 
         return await get_paginated_results(where_clauses, query, order, PermissionOrm, db)
 

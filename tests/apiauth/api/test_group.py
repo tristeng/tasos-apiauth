@@ -32,16 +32,34 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
     # create a deactivated user and an admin user
     session_maker = get_sessionmaker()
     async with session_maker() as conn:
-        # add an admin user
-        conn.add(UserOrm(email="me@admin.com", hashed_pw=hash_password("Abcdef123!"), is_active=True, is_admin=True))
+        # add some permissions
+        perm1 = PermissionOrm(name="permission1")
+        perm2 = PermissionOrm(name="permission2")
+        conn.add(perm1)
+        conn.add(perm2)
 
         # add a group
-        group = GroupOrm(name="group1")
+        group = GroupOrm(name="group1", permissions=[perm1, perm2])
         conn.add(group)
 
-        # add some permissions to the group
-        conn.add(PermissionOrm(name="permission1", group=group))
-        conn.add(PermissionOrm(name="permission2", group=group))
+        # add an admin user
+        admin_user = UserOrm(
+            email="me@admin.com",
+            hashed_pw=hash_password("Abcdef123!"),
+            is_active=True,
+            is_admin=True,
+        )
+        conn.add(admin_user)
+
+        # add a non-admin user and add them to the group
+        user = UserOrm(
+            email="notadmin@test.com",
+            hashed_pw=hash_password("Abcdef123!"),
+            is_active=True,
+            is_admin=False,
+            groups=[group],
+        )
+        conn.add(user)
 
         await conn.commit()
 

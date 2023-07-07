@@ -1,7 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Sequence
 
 from fastapi import FastAPI, HTTPException, status
@@ -32,7 +32,7 @@ class UserQueryParams(BaseFilterQueryParams):
     is_admin: bool | None = None
 
 
-class UserOrderColumns(Enum):
+class UserOrderColumns(StrEnum):
     """
     The user order columns
     """

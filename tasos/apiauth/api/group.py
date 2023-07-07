@@ -1,7 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
-from enum import Enum
+from enum import StrEnum
 from typing import Sequence, Annotated
 
 from fastapi import FastAPI, HTTPException
@@ -33,7 +33,7 @@ class GroupQueryParams(BaseFilterQueryParams):
     name: str | None = None
 
 
-class GroupOrderColumns(Enum):
+class GroupOrderColumns(StrEnum):
     """
     The group order columns
     """

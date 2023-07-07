@@ -1,10 +1,10 @@
 #
 # Copyright Tristen Georgiou 2023
 #
-from enum import Enum
-from typing import TypeVar, Generic, Type, Any
+from enum import StrEnum
+from typing import TypeVar, Generic, Type, Any, Annotated
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from pydantic import BaseModel, Field
 from pydantic.generics import GenericModel
 from sqlalchemy import select, func, asc, desc
@@ -13,7 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import UnaryExpression
 from starlette import status
 
-from tasos.apiauth.model import Base
+from tasos.apiauth.auth import get_current_active_user
+from tasos.apiauth.model import Base, UserOrm
 
 T = TypeVar("T")
 
@@ -36,7 +37,7 @@ class Paginated(GenericModel, Generic[T]):
     items: list[T]
 
 
-class OrderDirection(Enum):
+class OrderDirection(StrEnum):
     """
     The order direction for a query result set
     """
@@ -50,8 +51,42 @@ class BaseOrderQueryParams(BaseModel):
     The base order by query parameters for the group model
     """
 
-    order_by: Enum
+    order_by: StrEnum
     order_dir: OrderDirection = OrderDirection.asc
+
+
+class UserHasPermissions:
+    """
+    A dependency that checks if the current user has the given permissions
+    """
+
+    def __init__(self, *permissions: StrEnum) -> None:
+        """
+        Initializes a new instance of the UserHasPermissions class
+
+        :param permissions: The required permissions
+        """
+        self.permissions = [perm for perm in permissions]
+
+    async def __call__(self, user: Annotated[UserOrm, Depends(get_current_active_user)]) -> None:
+        """
+        Checks if the current user has the required permissions
+
+        :param user: The current user
+        :raises HTTPException: If the user does not have the required permissions
+        """
+        # check if the user is an admin and if so, they have all permissions
+        if user.is_admin:
+            return
+
+        # assemble the user's permissions
+        permissions = set()
+        for group in user.groups:
+            permissions.update({perm.name for perm in group.permissions})
+
+        # check if the user has all the required permissions
+        if not permissions.issuperset(self.permissions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User does not have required permissions")
 
 
 def validate_path(path: str) -> str:
@@ -89,7 +124,7 @@ async def get_paginated_results(
 
     # fetch the items filtered by the query
     order_clause: UnaryExpression[Any] = (
-        asc(order.order_by.value) if order.order_dir == OrderDirection.asc else desc(order.order_by.value)
+        asc(order.order_by) if order.order_dir == OrderDirection.asc else desc(order.order_by)
     )
 
     items = await db.execute(

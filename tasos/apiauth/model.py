@@ -19,7 +19,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     id: Mapped[int] = mapped_column(primary_key=True)
 
 
-# this is the table for the many-to-many group-permission relationship
+# these are the tables for the many-to-many group-permission relationship
 # https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many
 # "note for a Core table, we use the sqlalchemy.Column construct, not sqlalchemy.orm.mapped_column"
 usergroup_table = Table(
@@ -27,6 +27,14 @@ usergroup_table = Table(
     Base.metadata,
     Column("user_id", ForeignKey("user.id")),
     Column("group_id", ForeignKey("group.id")),
+)
+
+
+grouppermissions_table = Table(
+    "grouppermission",
+    Base.metadata,
+    Column("group_id", ForeignKey("group.id")),
+    Column("permission_id", ForeignKey("permission.id")),
 )
 
 
@@ -45,7 +53,7 @@ class UserOrm(Base):
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
 
     # relationships
-    groups: Mapped[list["GroupOrm"]] = relationship(secondary=usergroup_table)
+    groups: Mapped[list["GroupOrm"]] = relationship(secondary=usergroup_table, lazy="selectin")
 
 
 class User(BaseModel):
@@ -85,7 +93,7 @@ class GroupOrm(Base):
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
 
     # relationships
-    permissions: Mapped[list["PermissionOrm"]] = relationship(back_populates="group", lazy="selectin")
+    permissions: Mapped[list["PermissionOrm"]] = relationship(secondary=grouppermissions_table, lazy="selectin")
 
 
 class Group(BaseModel):
@@ -109,12 +117,8 @@ class PermissionOrm(Base):
 
     __tablename__ = "permission"
 
-    group_id = mapped_column(ForeignKey("group.id"))
     name: Mapped[str] = mapped_column(String(100), index=True, nullable=False, unique=True)
     created: Mapped[datetime] = mapped_column(DateTime(), index=True, insert_default=func.now())
-
-    # relationships
-    group: Mapped[GroupOrm] = relationship(back_populates="permissions")
 
 
 class Permission(BaseModel):
@@ -123,7 +127,6 @@ class Permission(BaseModel):
     """
 
     id: int
-    group_id: int  # NOTE: only referencing group by id to avoid recursion errors from pydantic - is there a better way?
     name: str
     created: datetime
 
@@ -187,3 +190,4 @@ class ChangePassword(Password):
 # update forward refs for ORM models
 UserInternal.update_forward_refs()
 Group.update_forward_refs()
+Permission.update_forward_refs()
