@@ -13,6 +13,7 @@ PASSWORD_HELP = (
     "Password must be between 8 and 50 characters long and contain at least one uppercase letter, one lowercase letter,"
     " one number and one special character from @$!%*?&"
 )
+DATETIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class ApiAuthSettings(BaseSettings):
@@ -26,6 +27,7 @@ class ApiAuthSettings(BaseSettings):
     database_url: str  #: Async DB engine e.g. dialect+driver://username:password@host:port/database[?key=value..]
     password_regex: Pattern[str] = re.compile(PASSWORD_REGEX)  #: regex for password strength
     password_help: str = PASSWORD_HELP  #: help text for password strength
+    datetime_fmt: str = DATETIME_FMT  #: datetime format for the API
 
     class Config:
         env_prefix = "apiauth_"

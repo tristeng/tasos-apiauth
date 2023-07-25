@@ -71,6 +71,14 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
+    def __str__(self) -> str:  # pragma: no cover
+        settings = get_apiauth_settings()
+        return (
+            f"{self.id}. Email: {self.email}, Active: {self.is_active}, Admin: {self.is_admin}, "
+            f"Last Login: {self.last_login.strftime(settings.datetime_fmt) if self.last_login else 'Never'}, "
+            f"Created: {self.created.strftime(settings.datetime_fmt)}"
+        )
+
 
 class UserInternal(User):
     """
@@ -109,6 +117,13 @@ class Group(BaseModel):
     class Config:
         orm_mode = True
 
+    def __str__(self) -> str:  # pragma: no cover
+        settings = get_apiauth_settings()
+        return (
+            f"{self.id}. Name: {self.name}, Created: {self.created.strftime(settings.datetime_fmt)}, "
+            f"Permissions: {', '.join(p.name for p in self.permissions)}"
+        )
+
 
 class PermissionOrm(Base):
     """
@@ -132,6 +147,10 @@ class Permission(BaseModel):
 
     class Config:
         orm_mode = True
+
+    def __str__(self) -> str:  # pragma: no cover
+        settings = get_apiauth_settings()
+        return f"{self.id}. Name: {self.name}, Created: {self.created.strftime(settings.datetime_fmt)}"
 
 
 class Token(BaseModel):

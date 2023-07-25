@@ -14,7 +14,7 @@ from sqlalchemy.sql.elements import UnaryExpression
 from starlette import status
 
 from tasos.apiauth.auth import get_current_active_user
-from tasos.apiauth.model import Base, UserOrm
+from tasos.apiauth.model import Base, UserOrm, PermissionOrm
 
 T = TypeVar("T")
 
@@ -166,3 +166,25 @@ async def get_object_from_db_by_id_or_name(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Multiple {name}s found for name '{id_or_name}'"
         )
+
+
+async def get_permissions_by_name(permissions: set[str], db: AsyncSession) -> list[PermissionOrm]:
+    """
+    Fetches permissions from the database by name
+
+    :param permissions: The permissions - a set of exact permission names
+    :param db: The database session
+    :return: The permissions or an empty list if none were specified
+    :raises ValueError: if one or more permissions were not found
+    """
+    results = []
+    if permissions is not None:
+        perm_results = await db.execute(select(PermissionOrm).where(PermissionOrm.name.in_(permissions)))
+        results = perm_results.scalars().all()
+
+        # make sure all the permissions were found
+        if len(results) != len(permissions):
+            msg = ", ".join([perm.name for perm in results])
+            raise ValueError(f"One or more permissions were not found. Found = {msg}")
+
+    return results

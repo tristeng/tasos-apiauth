@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from tasos.apiauth.model import UserOrm
-from tasos.apiauth.cli import _create_user, get_parser, _edit_user  # noqa
+from tasos.apiauth.cli import _create_user, get_parser, _edit_user, _list_permissions, _list_groups, _list_users  # noqa
 
 
 @pytest.fixture
@@ -31,6 +31,7 @@ def mock_getpass_no_match(monkeypatch: pytest.MonkeyPatch) -> None:
 def mock_database(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     mock_db = AsyncMock()
     mock_db.add = MagicMock()  # add is an sync method
+    mock_db.execute = AsyncMock(return_value=MagicMock())  # execute is an async method, but the return value is sync
 
     mock_cm = AsyncMock()
     mock_cm.__aenter__.return_value = mock_db
@@ -186,3 +187,59 @@ async def test_edit_user_not_exists(
     args = parser.parse_args("edituser who@isthis.com --admin".split())
     with pytest.raises(ValueError, match="A user with this email does not exist"):
         await _edit_user(args)
+
+
+@pytest.mark.asyncio
+async def test_list_users(mock_database: AsyncMock) -> None:
+    parser = get_parser()
+
+    # test listing the permissions
+    args = parser.parse_args("listusers --filter abc@def.com --no-admin --active --limit 5 --offset 25".split())
+
+    await _list_users(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "\"user\".email = 'abc@def.com'" in sql
+    assert "\"user\".is_admin = false" in sql
+    assert "\"user\".is_active = true" in sql
+    assert "LIMIT 5" in sql
+    assert "OFFSET 25" in sql
+
+
+@pytest.mark.asyncio
+async def test_list_permissions(mock_database: AsyncMock) -> None:
+    parser = get_parser()
+
+    # test listing the permissions
+    args = parser.parse_args("listpermissions --filter abc def".split())
+
+    await _list_permissions(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "lower(permission.name) LIKE lower('%abc%')" in sql
+    assert "lower(permission.name) LIKE lower('%def%')" in sql
+    assert " OR " in sql
+
+
+@pytest.mark.asyncio
+async def test_list_groups(mock_database: AsyncMock) -> None:
+    parser = get_parser()
+
+    # test listing the groups
+    args = parser.parse_args("listgroups --filter abc def".split())
+
+    await _list_groups(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "lower(\"group\".name) LIKE lower('%abc%')" in sql
+    assert "lower(\"group\".name) LIKE lower('%def%')" in sql
+    assert " OR " in sql
