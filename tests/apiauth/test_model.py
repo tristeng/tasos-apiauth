@@ -86,8 +86,10 @@ def test_new_password_same_as_old() -> None:
 
 def test_password_change() -> None:
     # test valid password change
-    ChangePassword.parse_obj({
-        "current_password": "Abcdef123!",
-        "password": "1%TasosSoftware",
-        "password_confirm": "1%TasosSoftware",
-    })
+    ChangePassword.parse_obj(
+        {
+            "current_password": "Abcdef123!",
+            "password": "1%TasosSoftware",
+            "password_confirm": "1%TasosSoftware",
+        }
+    )

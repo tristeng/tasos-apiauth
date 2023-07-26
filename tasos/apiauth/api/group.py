@@ -21,9 +21,9 @@ from tasos.apiauth.helpers import (
     get_paginated_results,
     BaseOrderQueryParams,
     get_object_from_db_by_id_or_name,
-    get_permissions_by_name,
+    get_objects_by_name,
 )
-from tasos.apiauth.model import Group, GroupOrm
+from tasos.apiauth.model import Group, GroupOrm, PermissionOrm
 
 
 class GroupQueryParams(BaseFilterQueryParams):
@@ -31,7 +31,7 @@ class GroupQueryParams(BaseFilterQueryParams):
     The group query parameters
     """
 
-    name: constr(max_length=100, strip_whitespace=True, to_lower=True) | None = None
+    name: Annotated[str, constr(max_length=100, strip_whitespace=True, to_lower=True)] | None = None
 
 
 class GroupOrderColumns(StrEnum):
@@ -58,7 +58,7 @@ class GroupCreate(BaseModel):
     The group model to create a new group
     """
 
-    name: constr(min_length=3, max_length=100, strip_whitespace=True, to_lower=True)  #: the group name
+    name: Annotated[str, constr(min_length=3, max_length=100, strip_whitespace=True, to_lower=True)]  #: the group name
     permissions: set[str] | None = None  #: exact names
 
 
@@ -66,8 +66,6 @@ class GroupModify(GroupCreate):
     """
     The group model to modify an existing group
     """
-
-    name: constr(min_length=3, max_length=100, strip_whitespace=True, to_lower=True) | None  #: optional edit group name
 
 
 def add_group_endpoints_to_app(
@@ -146,8 +144,10 @@ def add_group_endpoints_to_app(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A group with this name already exists")
 
         # make sure the permissions are valid and fetch them from the database
+        permissions: Sequence[PermissionOrm] = []
         try:
-            permissions = await get_permissions_by_name(group.permissions, db)
+            if group.permissions:
+                permissions = await get_objects_by_name(set(group.permissions), db, "Permission", PermissionOrm)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
@@ -175,11 +175,13 @@ def add_group_endpoints_to_app(
         Modifies an existing group - permissions are replaced
         """
         # make sure the group exists
-        group_orm = await get_object_from_db_by_id_or_name(group_id, db, "Group", GroupOrm)
+        group_orm: GroupOrm = await get_object_from_db_by_id_or_name(group_id, db, "Group", GroupOrm)
 
         # make sure the permissions are valid and fetch them from the database
+        permissions: list[PermissionOrm] = []
         try:
-            permissions = await get_permissions_by_name(group.permissions, db)
+            if group.permissions:
+                permissions = await get_objects_by_name(set(group.permissions), db, "Permission", PermissionOrm)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

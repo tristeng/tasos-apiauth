@@ -4,10 +4,11 @@
 import argparse
 import asyncio
 import getpass
+from typing import Sequence
 
 from sqlalchemy import select, asc, or_
 
-from tasos.apiauth.helpers import get_permissions_by_name
+from tasos.apiauth.helpers import get_objects_by_name
 from tasos.apiauth.auth import get_user_by_email, hash_password
 from tasos.apiauth.db import get_sessionmaker
 from tasos.apiauth.model import UserOrm, User, Group, Permission, Registration, PermissionOrm, GroupOrm
@@ -70,6 +71,18 @@ async def _edit_user(userargs: argparse.Namespace) -> None:
             user.is_admin = userargs.admin
         if userargs.active is not None:  # pragma: no cover
             user.is_active = userargs.active
+        if userargs.groups:
+            # special case to clear user's groups
+            if len(userargs.groups) == 1 and userargs.groups[0] == "[]":
+                user.groups = []
+            else:
+                # make sure the groups exist
+                result = await db.execute(select(GroupOrm).filter(GroupOrm.name.in_(userargs.groups)))
+                groups: Sequence[GroupOrm] = result.scalars().all()
+                if len(groups) != len(userargs.groups):
+                    msg = ", ".join([group.name for group in groups])
+                    raise ValueError(f"One or more groups were not found. Found = {msg}")
+                user.groups = list(groups)
 
         db.add(user)
         await db.commit()
@@ -107,16 +120,16 @@ async def _list_users(userargs: argparse.Namespace) -> None:
                     print(f"      {Group.from_orm(group)}")
 
 
-async def _list_permissions(userargs: argparse.Namespace) -> None:
+async def _list_permissions(permargs: argparse.Namespace) -> None:
     """The async version of list_permissions
 
-    :param userargs: the arguments
+    :param permargs: the arguments
     """
     async_session = get_sessionmaker()
     async with async_session() as db:
         stmt = select(PermissionOrm)
-        if userargs.filter:  # pragma: no cover
-            where_clauses = [PermissionOrm.name.ilike(f"%{fil}%") for fil in userargs.filter]
+        if permargs.filter:  # pragma: no cover
+            where_clauses = [PermissionOrm.name.ilike(f"%{fil}%") for fil in permargs.filter]
             stmt = stmt.where(or_(*where_clauses))
         stmt = stmt.order_by(asc(PermissionOrm.id))
 
@@ -126,16 +139,16 @@ async def _list_permissions(userargs: argparse.Namespace) -> None:
             print(f"  {Permission.from_orm(permission)}")
 
 
-async def _list_groups(userargs: argparse.Namespace) -> None:
+async def _list_groups(groupargs: argparse.Namespace) -> None:
     """The async version of list_groups
 
-    :param userargs: the arguments
+    :param groupargs: the arguments
     """
     async_session = get_sessionmaker()
     async with async_session() as db:
         stmt = select(GroupOrm)
-        if userargs.filter:  # pragma: no cover
-            where_clauses = [GroupOrm.name.ilike(f"%{fil}%") for fil in userargs.filter]
+        if groupargs.filter:  # pragma: no cover
+            where_clauses = [GroupOrm.name.ilike(f"%{fil}%") for fil in groupargs.filter]
             stmt = stmt.where(or_(*where_clauses))
         stmt = stmt.order_by(asc(GroupOrm.id))
 
@@ -158,7 +171,7 @@ async def _create_group(groupargs: argparse.Namespace) -> None:
             raise ValueError("A group with this name already exists")
 
         # make sure the permissions are valid and fetch them from the database
-        permissions = await get_permissions_by_name(set(groupargs.permissions), db)
+        permissions = await get_objects_by_name(set(groupargs.permissions), db, "Permission", PermissionOrm)
 
         # create the group
         group = GroupOrm(name=groupargs.name, permissions=permissions)
@@ -183,14 +196,14 @@ async def _edit_group(groupargs: argparse.Namespace) -> None:
             raise ValueError(f"No group with name {groupargs.name} exists")
 
         # edit the group
-        if groupargs.newname and groupargs.newname != groupargs.name:
+        if groupargs.newname and groupargs.newname != groupargs.name:  # pragma: no cover
             # make sure the new name doesn't already exist
             result = await db.execute(select(GroupOrm).filter(GroupOrm.name == groupargs.newname))
             if result.scalars().first() is not None:
                 raise ValueError("A group with this name already exists")
             group.name = groupargs.newname
         if groupargs.permissions:
-            permissions = await get_permissions_by_name(set(groupargs.permissions), db)
+            permissions = await get_objects_by_name(set(groupargs.permissions), db, "Permission", PermissionOrm)
             group.permissions = permissions
         else:
             # clears out the permissions for this group
@@ -226,20 +239,20 @@ def list_users(userargs: argparse.Namespace) -> None:  # pragma: no cover
     asyncio.run(_list_users(userargs))
 
 
-def list_permissions(userargs: argparse.Namespace) -> None:  # pragma: no cover
+def list_permissions(permargs: argparse.Namespace) -> None:  # pragma: no cover
     """Lists the permissions of available int the database
 
-    :param userargs: the arguments
+    :param permargs: the arguments
     """
-    asyncio.run(_list_permissions(userargs))
+    asyncio.run(_list_permissions(permargs))
 
 
-def list_groups(userargs: argparse.Namespace) -> None:  # pragma: no cover
+def list_groups(groupargs: argparse.Namespace) -> None:  # pragma: no cover
     """Lists the groups of available int the database
 
-    :param userargs: the arguments
+    :param groupargs: the arguments
     """
-    asyncio.run(_list_groups(userargs))
+    asyncio.run(_list_groups(groupargs))
 
 
 def create_group(groupargs: argparse.Namespace) -> None:  # pragma: no cover
@@ -283,6 +296,9 @@ def get_parser() -> argparse.ArgumentParser:  # pragma: no cover
     parser_edit_user.add_argument("email", help="the email of an existing user")
     parser_edit_user.add_argument("--admin", action=argparse.BooleanOptionalAction, help="admin status toggle")
     parser_edit_user.add_argument("--active", action=argparse.BooleanOptionalAction, help="active status toggle")
+    parser_edit_user.add_argument(
+        "--groups", action="extend", nargs="+", type=str, help="groups to set for the user (exact names) or [] to clear"
+    )
     parser_edit_user.set_defaults(func=edit_user)
 
     # list the users
@@ -314,7 +330,7 @@ def get_parser() -> argparse.ArgumentParser:  # pragma: no cover
     parser_create_group = subparsers.add_parser("newgroup", help="creates a new group")
     parser_create_group.add_argument("name", help="the name of the group")
     parser_create_group.add_argument(
-        "--permissions", action="extend", nargs="+", type=str, help="permissions to add to the group (exact names)"
+        "--permissions", action="extend", nargs="+", type=str, help="permissions to set to the group (exact names)"
     )
     parser_create_group.set_defaults(func=create_group)
 
@@ -323,7 +339,7 @@ def get_parser() -> argparse.ArgumentParser:  # pragma: no cover
     parser_edit_group.add_argument("name", help="the name of the group to edit")
     parser_edit_group.add_argument("--newname", help="the updated name of the group", type=str)
     parser_edit_group.add_argument(
-        "--permissions", action="extend", nargs="+", type=str, help="permissions to add to the group (exact names)"
+        "--permissions", action="extend", nargs="+", type=str, help="permissions to set to the group (exact names)"
     )
     parser_edit_group.set_defaults(func=edit_group)
 

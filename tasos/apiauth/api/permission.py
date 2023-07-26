@@ -28,7 +28,7 @@ class PermissionQueryParams(BaseFilterQueryParams):
     The permission query parameters
     """
 
-    name: constr(max_length=100) | None = None
+    name: Annotated[str, constr(max_length=100)] | None = None
 
 
 class PermissionOrderColumns(StrEnum):
