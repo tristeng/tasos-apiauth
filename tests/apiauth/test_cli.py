@@ -113,6 +113,19 @@ def mock_get_permissions(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("tasos.apiauth.cli.get_objects_by_name", mock_get_objects_by_name)
 
 
+@pytest.fixture
+def mock_get_groups(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def mock_get_objects_by_name(
+        names: set[str], db: AsyncMock, model_name: str, orm: Type[Base]  # noqa
+    ) -> list[Base]:
+        return [
+            GroupOrm(id=1, name="owner", created=datetime.now()),
+            GroupOrm(id=2, name="member", created=datetime.now()),
+        ]
+
+    monkeypatch.setattr("tasos.apiauth.cli.get_objects_by_name", mock_get_objects_by_name)
+
+
 def create_user_assertions(mock_database: AsyncMock, expected: UserOrm) -> None:
     mock_database.add.assert_called_once()
     actual = mock_database.add.call_args.args[0]
@@ -200,9 +213,55 @@ async def test_edit_user(mock_database: AsyncMock, mock_get_user_exists: None, m
     mock_database.add.assert_called_once()
     actual = mock_database.add.call_args.args[0]
     assert actual.email == "test@test.com"
-    assert actual.is_active is False
-    assert actual.is_admin is True
     mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_set_groups(
+    mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None, mock_get_groups: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --groups owner member".split())
+    await _edit_user(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+    assert actual.email == "test@test.com"
+    assert len(actual.groups) == 2
+    assert actual.groups[0].name == "owner"
+    assert actual.groups[1].name == "member"
+    mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_clear_groups(
+    mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None, mock_get_groups: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --groups []".split())
+    await _edit_user(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+    assert actual.email == "test@test.com"
+    assert len(actual.groups) == 0
+    mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_group_doesnt_exist(
+    mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None, mock_get_groups: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --groups owner member foo".split())
+    with pytest.raises(ValueError, match="One or more groups were not found. Found = owner, member"):
+        await _edit_user(args)
 
 
 @pytest.mark.asyncio

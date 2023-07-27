@@ -4,7 +4,6 @@
 import argparse
 import asyncio
 import getpass
-from typing import Sequence
 
 from sqlalchemy import select, asc, or_
 
@@ -77,8 +76,7 @@ async def _edit_user(userargs: argparse.Namespace) -> None:
                 user.groups = []
             else:
                 # make sure the groups exist
-                result = await db.execute(select(GroupOrm).filter(GroupOrm.name.in_(userargs.groups)))
-                groups: Sequence[GroupOrm] = result.scalars().all()
+                groups = await get_objects_by_name(set(userargs.groups), db, "Group", GroupOrm)
                 if len(groups) != len(userargs.groups):
                     msg = ", ".join([group.name for group in groups])
                     raise ValueError(f"One or more groups were not found. Found = {msg}")

@@ -181,7 +181,7 @@ async def get_objects_by_name(names: set[str], db: AsyncSession, model_name: str
     """
     results: Sequence[V] = []
 
-    if names is not None:
+    if names:  # pragma: no branch
         query = await db.execute(select(orm).where(orm.name.in_(names)))
         results = query.scalars().all()
 
