@@ -6,6 +6,7 @@ from typing import Sequence, Annotated, Any
 
 from fastapi import FastAPI
 from fastapi.params import Depends
+from pydantic import constr
 from sqlalchemy import BinaryExpression, ColumnElement
 
 from tasos.apiauth.auth import get_current_admin_user
@@ -27,7 +28,7 @@ class PermissionQueryParams(BaseFilterQueryParams):
     The permission query parameters
     """
 
-    name: str | None = None
+    name: Annotated[str, constr(max_length=100)] | None = None
 
 
 class PermissionOrderColumns(StrEnum):
@@ -84,8 +85,8 @@ def add_permission_endpoints_to_app(
         """
         # create the where clauses
         where_clauses: list[ColumnElement[Any] | BinaryExpression[Any]] = []
-        if query.name is not None:
-            where_clauses.append(PermissionOrm.name.like(query.name))
+        if query.name:
+            where_clauses.append(PermissionOrm.name.ilike(f"%{query.name}%"))
 
         return await get_paginated_results(where_clauses, query, order, PermissionOrm, db)
 

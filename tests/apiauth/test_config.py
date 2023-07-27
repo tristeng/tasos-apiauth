@@ -15,3 +15,4 @@ def test_get_apiauth_settings() -> None:
     assert settings.database_url == "sqlite+aiosqlite://?check_same_thread=false"
     assert settings.password_regex == re.compile(PASSWORD_REGEX)
     assert settings.password_help == PASSWORD_HELP
+    assert settings.datetime_fmt == "%Y-%m-%d %H:%M:%S"

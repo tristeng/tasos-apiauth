@@ -40,6 +40,8 @@ APIAUTH_ACCESS_TOKEN_EXPIRE_MINUTES=15
 APIAUTH_DATABASE_URL=sqlite+aiosqlite:///./demo.db?check_same_thread=false
 ```
 
+See `tasos/apiauth/config.py` for more configuration options and their defaults.
+
 You can generate your secret key with the following command:
 ```bash
 generate with openssl rand -hex 32
@@ -90,15 +92,17 @@ If you only want to add select endpoints with custom base URLs:
 ```python
 from fastapi import FastAPI
 
-from tasos.apiauth.api import add_base_endpoints_to_app, add_user_endpoints_to_app, add_group_endpoints_to_app
+from tasos.apiauth.api import add_base_endpoints_to_app, add_user_endpoints_to_app, add_group_endpoints_to_app, \
+    add_permission_endpoints_to_app
 
 # create your app as you like
 app = FastAPI()
 
-# add only the endpoints you want at the paths you desire
+# add only the endpoints you want at the paths you desire (path is optional and defaults to /api/auth)
 add_base_endpoints_to_app(app, path="/api/auth")
 add_user_endpoints_to_app(app, path="/api/users")
 add_group_endpoints_to_app(app, path="/api/groups")
+add_permission_endpoints_to_app(app, path="/api/permissions")
 
 # you could also add all of them at the default paths
 # add_all_endpoints_to_app(app)

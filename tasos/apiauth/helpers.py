@@ -2,7 +2,7 @@
 # Copyright Tristen Georgiou 2023
 #
 from enum import StrEnum
-from typing import TypeVar, Generic, Type, Any, Annotated
+from typing import TypeVar, Generic, Any, Annotated, Sequence
 
 from fastapi import HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -14,9 +14,11 @@ from sqlalchemy.sql.elements import UnaryExpression
 from starlette import status
 
 from tasos.apiauth.auth import get_current_active_user
-from tasos.apiauth.model import Base, UserOrm
+from tasos.apiauth.model import Base, UserOrm, PermissionOrm, GroupOrm
 
 T = TypeVar("T")
+U = TypeVar("U", UserOrm, GroupOrm, PermissionOrm)
+V = TypeVar("V", GroupOrm, PermissionOrm)
 
 
 class BaseFilterQueryParams(BaseModel):
@@ -106,7 +108,7 @@ async def get_paginated_results(
     where_clauses: list[Any],
     query: BaseFilterQueryParams,
     order: BaseOrderQueryParams,
-    model: Type[Base],
+    model: type[Base],
     db: AsyncSession,
 ) -> Paginated[Any]:
     """
@@ -134,9 +136,7 @@ async def get_paginated_results(
     return Paginated(total=count.scalar_one(), items=[item for item in items.scalars()])
 
 
-async def get_object_from_db_by_id_or_name(
-    id_or_name: int | str, db: AsyncSession, name: str, orm: Type[Base]
-) -> Type[BaseModel] | Base:
+async def get_object_from_db_by_id_or_name(id_or_name: int | str, db: AsyncSession, name: str, orm: type[U]) -> U:
     """
     Get the given object by its database id or name
 
@@ -166,3 +166,28 @@ async def get_object_from_db_by_id_or_name(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Multiple {name}s found for name '{id_or_name}'"
         )
+
+
+async def get_objects_by_name(names: set[str], db: AsyncSession, model_name: str, orm: type[V]) -> list[V]:
+    """
+    Fetches objects from the database by name
+
+    :param names: The names - a set of exact names
+    :param db: The database session
+    :param model_name: The name of the model, e.g. Group, Permission, etc.
+    :param orm: The ORM model to query against - must have an attribute called 'name'
+    :return: The permissions or an empty list if none were specified
+    :raises ValueError: if one or more permissions were not found
+    """
+    results: Sequence[V] = []
+
+    if names:  # pragma: no branch
+        query = await db.execute(select(orm).where(orm.name.in_(names)))
+        results = query.scalars().all()
+
+        # make sure all the requested objects were found
+        if len(results) != len(names):
+            msg = ", ".join([obj.name for obj in results])
+            raise ValueError(f"One or more {model_name}s were not found. Found = {msg}")
+
+    return list(results)

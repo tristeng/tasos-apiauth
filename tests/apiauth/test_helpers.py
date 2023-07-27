@@ -18,6 +18,7 @@ from tasos.apiauth.helpers import (
     get_object_from_db_by_id_or_name,
     OrderDirection,
     UserHasPermissions,
+    get_objects_by_name,
 )
 from tasos.apiauth.model import PermissionOrm, GroupOrm, Group, UserOrm
 
@@ -85,6 +86,19 @@ def mock_current_active_user() -> UserOrm:
 
     user = UserOrm(id=1, email="someuser@test.com", hashed_pw="somehashedpassword", is_active=True, groups=[group1])
     return user
+
+
+@pytest.fixture
+def mock_db_get_objects_by_name() -> AsyncMock:
+    item_result = MagicMock(Result)
+    item_result.scalars().all.return_value = [
+        GroupOrm(id=1, name="group1", created=datetime.now(), permissions=[]),
+        GroupOrm(id=2, name="group2", created=datetime.now(), permissions=[]),
+    ]
+
+    mock_db = AsyncMock(AsyncSession)
+    mock_db.execute.return_value = item_result
+    return mock_db
 
 
 def test_validate_path() -> None:
@@ -177,3 +191,19 @@ async def test_user_has_permissions_dep(mock_current_active_user: UserOrm) -> No
     # but if the user is admin, we should be able to pass any permission check
     mock_current_active_user.is_admin = True
     await checker_invalid(mock_current_active_user)
+
+
+@pytest.mark.asyncio
+async def test_get_objects_by_name(mock_db_get_objects_by_name: AsyncMock) -> None:
+    actual = await get_objects_by_name({"group1", "group2"}, mock_db_get_objects_by_name, "Group", GroupOrm)
+    assert len(actual) == 2
+    assert actual[0].id == 1
+    assert actual[0].name == "group1"
+    assert actual[1].id == 2
+    assert actual[1].name == "group2"
+
+
+@pytest.mark.asyncio
+async def test_get_objects_by_name_invalid(mock_db_get_objects_by_name: AsyncMock) -> None:
+    with pytest.raises(ValueError, match="One or more Groups were not found. Found = group1, group2"):
+        await get_objects_by_name({"group1", "group2", "group3"}, mock_db_get_objects_by_name, "Group", GroupOrm)

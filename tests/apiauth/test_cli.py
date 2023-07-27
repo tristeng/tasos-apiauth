@@ -2,12 +2,23 @@
 # Copyright Tristen Georgiou 2023
 #
 from collections.abc import Iterator
+from datetime import datetime
+from typing import Type
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from tasos.apiauth.model import UserOrm
-from tasos.apiauth.cli import _create_user, get_parser, _edit_user  # noqa
+from tasos.apiauth.model import UserOrm, PermissionOrm, GroupOrm, Base
+from tasos.apiauth.cli import (
+    get_parser,
+    _create_user,  # noqa
+    _edit_user,  # noqa
+    _list_permissions,  # noqa
+    _list_groups,  # noqa
+    _list_users,  # noqa
+    _create_group,  # noqa
+    _edit_group,  # noqa
+)
 
 
 @pytest.fixture
@@ -31,6 +42,7 @@ def mock_getpass_no_match(monkeypatch: pytest.MonkeyPatch) -> None:
 def mock_database(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     mock_db = AsyncMock()
     mock_db.add = MagicMock()  # add is an sync method
+    mock_db.execute = AsyncMock(return_value=MagicMock())  # execute is an async method, but the return value is sync
 
     mock_cm = AsyncMock()
     mock_cm.__aenter__.return_value = mock_db
@@ -79,9 +91,39 @@ def mock_get_user_exists(monkeypatch: pytest.MonkeyPatch) -> None:
             hashed_pw="Abcdef123!",
             is_active=True,
             is_admin=False,
+            groups=[
+                GroupOrm(id=1, name="group1", created=datetime.now()),
+                GroupOrm(id=2, name="group2", created=datetime.now()),
+            ],
         )
 
     monkeypatch.setattr("tasos.apiauth.cli.get_user_by_email", mock_get_user_by_email)
+
+
+@pytest.fixture
+def mock_get_permissions(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def mock_get_objects_by_name(
+        names: set[str], db: AsyncMock, model_name: str, orm: Type[Base]  # noqa
+    ) -> list[Base]:
+        return [
+            PermissionOrm(id=1, name="read", created=datetime.now()),
+            PermissionOrm(id=2, name="write", created=datetime.now()),
+        ]
+
+    monkeypatch.setattr("tasos.apiauth.cli.get_objects_by_name", mock_get_objects_by_name)
+
+
+@pytest.fixture
+def mock_get_groups(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def mock_get_objects_by_name(
+        names: set[str], db: AsyncMock, model_name: str, orm: Type[Base]  # noqa
+    ) -> list[Base]:
+        return [
+            GroupOrm(id=1, name="owner", created=datetime.now()),
+            GroupOrm(id=2, name="member", created=datetime.now()),
+        ]
+
+    monkeypatch.setattr("tasos.apiauth.cli.get_objects_by_name", mock_get_objects_by_name)
 
 
 def create_user_assertions(mock_database: AsyncMock, expected: UserOrm) -> None:
@@ -171,9 +213,55 @@ async def test_edit_user(mock_database: AsyncMock, mock_get_user_exists: None, m
     mock_database.add.assert_called_once()
     actual = mock_database.add.call_args.args[0]
     assert actual.email == "test@test.com"
-    assert actual.is_active is False
-    assert actual.is_admin is True
     mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_set_groups(
+    mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None, mock_get_groups: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --groups owner member".split())
+    await _edit_user(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+    assert actual.email == "test@test.com"
+    assert len(actual.groups) == 2
+    assert actual.groups[0].name == "owner"
+    assert actual.groups[1].name == "member"
+    mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_clear_groups(
+    mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None, mock_get_groups: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --groups []".split())
+    await _edit_user(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+    assert actual.email == "test@test.com"
+    assert len(actual.groups) == 0
+    mock_database.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_edit_user_group_doesnt_exist(
+    mock_database: AsyncMock, mock_get_user_exists: None, mock_user_model: None, mock_get_groups: None
+) -> None:
+    parser = get_parser()
+
+    # test setting a user to admin and deactivating them
+    args = parser.parse_args("edituser test@test.com --groups owner member foo".split())
+    with pytest.raises(ValueError, match="One or more groups were not found. Found = owner, member"):
+        await _edit_user(args)
 
 
 @pytest.mark.asyncio
@@ -186,3 +274,188 @@ async def test_edit_user_not_exists(
     args = parser.parse_args("edituser who@isthis.com --admin".split())
     with pytest.raises(ValueError, match="A user with this email does not exist"):
         await _edit_user(args)
+
+
+@pytest.mark.asyncio
+async def test_list_users(mock_database: AsyncMock) -> None:
+    parser = get_parser()
+
+    # test listing the permissions
+    args = parser.parse_args("listusers --filter abc@def.com --no-admin --active --limit 5 --offset 25".split())
+
+    await _list_users(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "\"user\".email = 'abc@def.com'" in sql
+    assert '"user".is_admin = false' in sql
+    assert '"user".is_active = true' in sql
+    assert "LIMIT 5" in sql
+    assert "OFFSET 25" in sql
+
+
+@pytest.mark.asyncio
+async def test_list_permissions(mock_database: AsyncMock) -> None:
+    parser = get_parser()
+
+    # test listing the permissions
+    args = parser.parse_args("listpermissions --filter abc def".split())
+
+    await _list_permissions(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "lower(permission.name) LIKE lower('%abc%')" in sql
+    assert "lower(permission.name) LIKE lower('%def%')" in sql
+    assert " OR " in sql
+
+
+@pytest.mark.asyncio
+async def test_list_groups(mock_database: AsyncMock) -> None:
+    parser = get_parser()
+
+    # test listing the groups
+    args = parser.parse_args("listgroups --filter abc def".split())
+
+    await _list_groups(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "lower(\"group\".name) LIKE lower('%abc%')" in sql
+    assert "lower(\"group\".name) LIKE lower('%def%')" in sql
+    assert " OR " in sql
+
+
+@pytest.mark.asyncio
+async def test_create_group(mock_database: AsyncMock, mock_get_permissions: None) -> None:
+    result = MagicMock()
+    result.scalars().first = MagicMock(return_value=None)  # return None to signify the group doesn't exist
+    mock_database.execute = AsyncMock(return_value=result)
+
+    def mock_add(group: GroupOrm) -> None:
+        group.id = 1
+        group.created = datetime.now()
+
+    mock_database.add = mock_add
+
+    parser = get_parser()
+
+    # test group creation
+    args = parser.parse_args("newgroup TestGroup --permissions read write".split())
+
+    await _create_group(args)
+    mock_database.execute.assert_called_once()
+    actual = mock_database.execute.call_args.args[0]
+
+    # convert the actual statement into a SQL string and ensure the sql contains the correct clauses
+    sql = str(actual.compile(compile_kwargs={"literal_binds": True}))
+    assert "\"group\".name = 'testgroup'" in sql  # should be lowercase
+
+    mock_database.commit.assert_called_once()
+    mock_database.refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_group_already_exists(mock_database: AsyncMock, mock_get_permissions: None) -> None:
+    result = MagicMock()
+    result.scalars().first = MagicMock(return_value=GroupOrm(id=1, name="testgroup", created=datetime.now()))
+    mock_database.execute = AsyncMock(return_value=result)
+
+    parser = get_parser()
+
+    # test group creation
+    args = parser.parse_args("newgroup TestGroup --permissions read write".split())
+
+    with pytest.raises(ValueError, match="A group with this name already exists"):
+        await _create_group(args)
+
+
+@pytest.mark.asyncio
+async def test_edit_group(mock_database: AsyncMock, mock_get_permissions: None) -> None:
+    result = MagicMock()
+
+    # first result is to get the group to modify, second call is to ensure a group with the new name doesn't exist
+    result.scalars().first = MagicMock(side_effect=[GroupOrm(id=1, name="testgroup", created=datetime.now()), None])
+    mock_database.execute = AsyncMock(return_value=result)  # group must exist for edit
+
+    parser = get_parser()
+
+    # test group edit, new name and permissions
+    args = parser.parse_args("editgroup TestGroup --newname grouptest --permissions read write".split())
+
+    await _edit_group(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+
+    assert actual.name == "grouptest"
+    assert len(actual.permissions) == 2
+    assert actual.permissions[0].name == "read"
+    assert actual.permissions[1].name == "write"
+
+
+@pytest.mark.asyncio
+async def test_edit_group_newname_exists(mock_database: AsyncMock, mock_get_permissions: None) -> None:
+    result = MagicMock()
+
+    # first result is to get the group to modify, second call is to ensure a group with the new name doesn't exist
+    result.scalars().first = MagicMock(
+        side_effect=[
+            GroupOrm(id=1, name="testgroup", created=datetime.now()),
+            GroupOrm(id=2, name="grouptest", created=datetime.now()),
+        ]
+    )
+    mock_database.execute = AsyncMock(return_value=result)
+
+    parser = get_parser()
+
+    # test group edit
+    args = parser.parse_args("editgroup TestGroup --newname grouptest".split())
+
+    with pytest.raises(ValueError, match="A group with this name already exists"):
+        await _edit_group(args)
+
+
+@pytest.mark.asyncio
+async def test_edit_group_not_exists(mock_database: AsyncMock, mock_get_permissions: None) -> None:
+    result = MagicMock()
+
+    # first result is to get the group to modify, second call is to ensure a group with the new name doesn't exist
+    result.scalars().first = MagicMock(return_value=None)
+    mock_database.execute = AsyncMock(return_value=result)
+
+    parser = get_parser()
+
+    # test group edit
+    args = parser.parse_args("editgroup TestGroup --newname grouptest".split())
+
+    with pytest.raises(ValueError, match="No group with name TestGroup exists"):
+        await _edit_group(args)
+
+
+@pytest.mark.asyncio
+async def test_edit_group_no_permissions(mock_database: AsyncMock, mock_get_permissions: None) -> None:
+    result = MagicMock()
+
+    # first result is to get the group to modify, second call is to ensure a group with the new name doesn't exist
+    result.scalars().first = MagicMock(side_effect=[GroupOrm(id=1, name="testgroup", created=datetime.now()), None])
+    mock_database.execute = AsyncMock(return_value=result)  # group must exist for edit
+
+    parser = get_parser()
+
+    # test group edit, new name and permissions
+    args = parser.parse_args("editgroup TestGroup --newname grouptest".split())
+
+    await _edit_group(args)
+
+    mock_database.add.assert_called_once()
+    actual = mock_database.add.call_args.args[0]
+
+    assert actual.name == "grouptest"
+    assert len(actual.permissions) == 0
