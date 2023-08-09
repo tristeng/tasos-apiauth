@@ -38,9 +38,12 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
         conn.add(perm1)
         conn.add(perm2)
 
-        # add a group
-        group = GroupOrm(name="group1", permissions=[perm1, perm2])
-        conn.add(group)
+        # add some groups
+        group1 = GroupOrm(name="group1", permissions=[perm1, perm2])
+        conn.add(group1)
+
+        group2 = GroupOrm(name="group2", permissions=[perm2])
+        conn.add(group2)
 
         # add an admin user
         admin_user = UserOrm(
@@ -57,7 +60,7 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
             hashed_pw=hash_password("Abcdef123!"),
             is_active=True,
             is_admin=False,
-            groups=[group],
+            groups=[group1],
         )
         conn.add(user)
 
@@ -85,11 +88,14 @@ async def test_list_groups(db_engine: AsyncEngine) -> None:  # noqa
         assert response.status_code == 200
 
         data = response.json()
-        assert data["total"] == 1
+        assert data["total"] == 2
         assert data["items"][0]["name"] == "group1"
         assert len(data["items"][0]["permissions"]) == 2
         assert data["items"][0]["permissions"][0]["name"] == "permission1"
         assert data["items"][0]["permissions"][1]["name"] == "permission2"
+        assert data["items"][1]["name"] == "group2"
+        assert len(data["items"][1]["permissions"]) == 1
+        assert data["items"][1]["permissions"][0]["name"] == "permission2"
 
 
 @pytest.mark.asyncio
@@ -127,10 +133,119 @@ async def test_create_group(db_engine: AsyncEngine) -> None:  # noqa
 
         # create a new group
         url = "/admin/groups"
-        response = await ac.post(url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group2"})
+        response = await ac.post(url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group3"})
         assert response.status_code == 200
 
         data = response.json()
-        assert data["id"] == 2
-        assert data["name"] == "group2"
+        assert data["id"] == 3
+        assert data["name"] == "group3"
         assert len(data["permissions"]) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_create_group_name_exists(db_engine: AsyncEngine) -> None:  # noqa
+    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+        # login to get credentials
+        url = "/auth/token"
+        response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # create a new group
+        url = "/admin/groups"
+        response = await ac.post(url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group1"})
+        assert response.status_code == 409
+
+        data = response.json()
+        assert data["detail"] == "A group with this name already exists"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_create_group_with_permissions(db_engine: AsyncEngine) -> None:  # noqa
+    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+        # login to get credentials
+        url = "/auth/token"
+        response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # create a new group
+        url = "/admin/groups"
+        response = await ac.post(
+            url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group3", "permissions": ["permission1"]}
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["id"] == 3
+        assert data["name"] == "group3"
+        assert len(data["permissions"]) == 1
+        assert data["permissions"][0]["name"] == "permission1"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_create_group_with_unknown_permission(db_engine: AsyncEngine) -> None:  # noqa
+    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+        # login to get credentials
+        url = "/auth/token"
+        response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # create a new group
+        url = "/admin/groups"
+        response = await ac.post(
+            url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group3", "permissions": ["permission3"]}
+        )
+        assert response.status_code == 404
+
+        data = response.json()
+        assert data["detail"] == "One or more Permissions were not found. Found = "
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_modify_group(db_engine: AsyncEngine) -> None:  # noqa
+    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+        # login to get credentials
+        url = "/auth/token"
+        response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # modify the group
+        url = "/admin/groups/1"
+        response = await ac.put(
+            url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group1", "permissions": ["permission1"]}
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["id"] == 1
+        assert data["name"] == "group1"
+        assert len(data["permissions"]) == 1
+        assert data["permissions"][0]["name"] == "permission1"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_modify_group_name_exists(db_engine: AsyncEngine) -> None:  # noqa
+    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+        # login to get credentials
+        url = "/auth/token"
+        response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # modify the group
+        url = "/admin/groups/1"
+        response = await ac.put(
+            url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group2", "permissions": ["permission1"]}
+        )
+        assert response.status_code == 409
+
+        data = response.json()
+        assert data["detail"] == "A group with this name already exists"

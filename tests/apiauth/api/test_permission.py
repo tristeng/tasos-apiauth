@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tasos.apiauth.api.base import add_base_endpoints_to_app
 from tasos.apiauth.api.permission import add_permission_endpoints_to_app
-from tasos.apiauth.helpers import UserHasPermissions
+from tasos.apiauth.helpers import UserHasAllPermissions, UserHasAnyPermission
 from .test_base import TEST_URL
 
 # re-use the db_engine fixture from the group tests
@@ -24,13 +24,16 @@ add_permission_endpoints_to_app(app)
 
 
 # the default user only has permission1 and permission2
-checker_valid1 = UserHasPermissions(CustomPermissions.permission1)
-checker_valid2 = UserHasPermissions(CustomPermissions.permission2)
-checker_valid3 = UserHasPermissions(CustomPermissions.permission1, CustomPermissions.permission2)
+checker_valid1 = UserHasAllPermissions(CustomPermissions.permission1)
+checker_valid2 = UserHasAllPermissions(CustomPermissions.permission2)
+checker_valid3 = UserHasAllPermissions(CustomPermissions.permission1, CustomPermissions.permission2)
 
-checker_invalid1 = UserHasPermissions(CustomPermissions.permission4)
-checker_invalid2 = UserHasPermissions(CustomPermissions.permission5)
-checker_invalid3 = UserHasPermissions(CustomPermissions.permission4, CustomPermissions.permission5)
+checker_invalid1 = UserHasAllPermissions(CustomPermissions.permission4)
+checker_invalid2 = UserHasAllPermissions(CustomPermissions.permission5)
+checker_invalid3 = UserHasAllPermissions(CustomPermissions.permission4, CustomPermissions.permission5)
+
+# the default user only has permission1 and permission2 - but this permission checker should pass
+checker_any = UserHasAnyPermission(CustomPermissions.permission1, CustomPermissions.permission5)
 
 
 # add some custom endpoints to test permission checking
@@ -61,6 +64,11 @@ async def some_endpoint5() -> dict[str, str]:
 
 @app.get("/some/endpoint6", dependencies=[Depends(checker_invalid3)])
 async def some_endpoint6() -> dict[str, str]:
+    return {}
+
+
+@app.get("/some/endpoint7", dependencies=[Depends(checker_any)])
+async def some_endpoint7() -> dict[str, str]:
     return {}
 
 
@@ -129,6 +137,11 @@ async def test_permissions_checkers(db_engine: AsyncEngine) -> None:  # noqa
             url = f"/some/endpoint{x}"
             response = await ac.get(url, headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
+
+        # check the any permission checker
+        url = "/some/endpoint7"
+        response = await ac.get(url, headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
 
         # test invalid permissions
         for x in range(4, 7):

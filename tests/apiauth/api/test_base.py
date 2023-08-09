@@ -1,6 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
+import asyncio
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -8,9 +9,9 @@ import pytest_asyncio
 from fastapi import FastAPI
 
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from tasos.apiauth.api.base import add_base_endpoints_to_app
+from tasos.apiauth.api.base import add_base_endpoints_to_app, post_registration_hooks
 from tasos.apiauth.auth import hash_password
 from tasos.apiauth.db import get_engine, get_sessionmaker
 from tasos.apiauth.model import Base, UserOrm
@@ -54,11 +55,20 @@ def register_payload() -> dict[str, str]:
 
 
 TEST_URL = "http://test"
+HOOK_CALLED = False
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]) -> None:  # noqa
+    # test a post registration hook
+    async def hook(db: AsyncSession, user: UserOrm) -> None:  # noqa
+        global HOOK_CALLED
+        HOOK_CALLED = True
+
+    # add the task to the list of hooks
+    post_registration_hooks.append(hook)
+
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:
         url = "/auth/register"
         response = await ac.post(url, json=register_payload)
@@ -71,6 +81,10 @@ async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]
     assert resp["is_active"] is True
     assert resp["is_admin"] is False
     assert resp["last_login"] is None
+
+    # test that the post registration hook was called
+    await asyncio.sleep(0.5)  # wait for the background task to finish
+    assert HOOK_CALLED is True
 
     # try to register the same user again
     async with AsyncClient(app=app, base_url=TEST_URL) as ac:

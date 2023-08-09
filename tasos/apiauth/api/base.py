@@ -2,10 +2,11 @@
 # Copyright Tristen Georgiou 2023
 #
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Callable, Awaitable
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tasos.apiauth.auth import (
     authenticate_user,
@@ -16,6 +17,9 @@ from tasos.apiauth.auth import (
 )
 from tasos.apiauth.db import DatabaseDepends
 from tasos.apiauth.model import Token, Registration, UserOrm, User, ChangePassword
+
+
+post_registration_hooks: list[Callable[[AsyncSession, UserOrm], Awaitable[None]]] = []
 
 
 def add_base_endpoints_to_app(app: FastAPI, path: str = "/auth") -> None:
@@ -38,7 +42,7 @@ def add_base_endpoints_to_app(app: FastAPI, path: str = "/auth") -> None:
         description="Registers a new user",
         tags=["auth"],
     )
-    async def register(form_data: Registration, db: DatabaseDepends) -> UserOrm:
+    async def register(form_data: Registration, db: DatabaseDepends, background_tasks: BackgroundTasks) -> UserOrm:
         """
         Registers a new user with the given email and password
         """
@@ -54,6 +58,11 @@ def add_base_endpoints_to_app(app: FastAPI, path: str = "/auth") -> None:
         )
         db.add(user)
         await db.commit()
+
+        # call any post registration hooks - for example to send a welcome email
+        if post_registration_hooks:
+            for hook in post_registration_hooks:
+                background_tasks.add_task(hook, db, user)
 
         return user
 
