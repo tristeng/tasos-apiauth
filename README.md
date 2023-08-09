@@ -116,6 +116,23 @@ uvicorn main:app --reload
 You should now be able to navigate to http://localhost:8000/docs to see the Swagger UI and use its interactive features
 to interact with the API. You can also navigate to http://localhost:8000/redoc to see the ReDoc UI.
 
+### Custom Registration Functions
+If you want to customize the registration process, you can create your own registration functions by appending them to
+the post registration hooks list. Define your function(s) to accept a database session and user object. For example:
+```python
+from tasos.apiauth.model import UserOrm
+from tasos.apiauth.api.base import post_registration_hooks
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+async def send_registration_email_hook(db: AsyncSession, user: UserOrm) -> None:
+    # for example, save a registration code to the database and send an email to the user with a link to confirm their
+    # email address
+    pass
+
+post_registration_hooks.append(send_registration_email_hook)
+```
+
 ### Permissions
 To implement permissions, you will first need to create a StrEnum class that defines the permissions you want to use,
 for example:
