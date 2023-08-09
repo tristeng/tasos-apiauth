@@ -154,10 +154,12 @@ alembic upgrade head
 
 As you add more permissions, you can repeat this process - you can use the same enumeration class or create a new one.
 
-Now you can use the `UserHasPermissions` dependency to check if a user has the permissions you want. For example:
+Now you can use the `UserHasAllPermissions` or `UserHasAnyPermission` dependency to check if a user has the permissions 
+you want. For example:
+
 ```python
 from fastapi import Depends, FastAPI
-from tasos.apiauth.helpers import UserHasPermissions
+from tasos.apiauth.helpers import UserHasAllPermissions, UserHasAnyPermission
 from tasos.apiauth.api import add_all_endpoints_to_app
 from wherever import MyCustomPermissions
 
@@ -168,11 +170,19 @@ app = FastAPI()
 add_all_endpoints_to_app(app)
 
 # you can add as many or as few permissions as you want using the list arguments
-perm_checker = UserHasPermissions(MyCustomPermissions.read, MyCustomPermissions.write)
+perm_checker_all = UserHasAllPermissions(MyCustomPermissions.read, MyCustomPermissions.write)
+perm_checker_any = UserHasAnyPermission(MyCustomPermissions.read, MyCustomPermissions.write)
 
-# now inject the dependency into your route
-@app.get("/some/endpoint", dependencies=[Depends(perm_checker)])
+
+# now inject the dependency into your routes
+@app.get("/some/endpoint", dependencies=[Depends(perm_checker_all)])  # user must have both read and write permissions
 async def some_endpoint1() -> dict[str, str]:
+    return {"works": "wooo!"}
+
+
+# user must have either read or write permission
+@app.get("/some/other/endpoint", dependencies=[Depends(perm_checker_any)])  
+async def some_other_endpoint1() -> dict[str, str]:
     return {"works": "wooo!"}
 ```
 

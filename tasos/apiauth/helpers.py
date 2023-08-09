@@ -57,7 +57,7 @@ class BaseOrderQueryParams(BaseModel):
     order_dir: OrderDirection = OrderDirection.asc
 
 
-class UserHasPermissions:
+class UserHasAllPermissions:
     """
     A dependency that checks if the current user has the given permissions
     """
@@ -88,6 +88,40 @@ class UserHasPermissions:
 
         # check if the user has all the required permissions
         if not permissions.issuperset(self.permissions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User does not have required permissions")
+
+
+class UserHasAnyPermission:
+    """
+    A dependency that checks if the current user has any of the given permissions
+    """
+
+    def __init__(self, *permissions: StrEnum) -> None:
+        """
+        Initializes a new instance of the UserHasAnyPermissions class
+
+        :param permissions: The required permissions
+        """
+        self.permissions = [perm for perm in permissions]
+
+    async def __call__(self, user: Annotated[UserOrm, Depends(get_current_active_user)]) -> None:
+        """
+        Checks if the current user has any of the required permissions
+
+        :param user: The current user
+        :raises HTTPException: If the user does not have any of the required permissions
+        """
+        # check if the user is an admin and if so, they have all permissions
+        if user.is_admin:
+            return
+
+        # assemble the user's permissions
+        permissions = set()
+        for group in user.groups:
+            permissions.update({perm.name for perm in group.permissions})
+
+        # check if the user has any of the required permissions
+        if not permissions.intersection(self.permissions):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User does not have required permissions")
 
 

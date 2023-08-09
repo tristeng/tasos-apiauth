@@ -17,7 +17,8 @@ from tasos.apiauth.helpers import (
     get_paginated_results,
     get_object_from_db_by_id_or_name,
     OrderDirection,
-    UserHasPermissions,
+    UserHasAllPermissions,
+    UserHasAnyPermission,
     get_objects_by_name,
 )
 from tasos.apiauth.model import PermissionOrm, GroupOrm, Group, UserOrm
@@ -167,11 +168,11 @@ async def test_get_object_from_db_by_id_or_name_invalid_model() -> None:
 
 
 @pytest.mark.asyncio
-async def test_user_has_permissions_dep(mock_current_active_user: UserOrm) -> None:
+async def test_user_has_all_permissions_dep(mock_current_active_user: UserOrm) -> None:
     # these checks should pass - the user has all 3 permissions
-    checker_valid1 = UserHasPermissions(CustomPermissions.permission1)
-    checker_valid2 = UserHasPermissions(CustomPermissions.permission1, CustomPermissions.permission2)
-    checker_valid3 = UserHasPermissions(
+    checker_valid1 = UserHasAllPermissions(CustomPermissions.permission1)
+    checker_valid2 = UserHasAllPermissions(CustomPermissions.permission1, CustomPermissions.permission2)
+    checker_valid3 = UserHasAllPermissions(
         CustomPermissions.permission1, CustomPermissions.permission2, CustomPermissions.permission3
     )
 
@@ -181,7 +182,7 @@ async def test_user_has_permissions_dep(mock_current_active_user: UserOrm) -> No
     await checker_valid3(mock_current_active_user)
 
     # test invalid permissions
-    checker_invalid = UserHasPermissions(CustomPermissions.permission1, CustomPermissions.permission4)
+    checker_invalid = UserHasAllPermissions(CustomPermissions.permission1, CustomPermissions.permission4)
     with pytest.raises(HTTPException) as exc:
         await checker_invalid(mock_current_active_user)
 
@@ -191,6 +192,42 @@ async def test_user_has_permissions_dep(mock_current_active_user: UserOrm) -> No
     # but if the user is admin, we should be able to pass any permission check
     mock_current_active_user.is_admin = True
     await checker_invalid(mock_current_active_user)
+
+
+@pytest.mark.asyncio
+async def test_user_has_any_permission_dep(mock_current_active_user: UserOrm) -> None:
+    # these checks should pass - the user has all 3 permissions
+    checker_valid1 = UserHasAnyPermission(CustomPermissions.permission1)
+    checker_valid2 = UserHasAnyPermission(CustomPermissions.permission2)
+    checker_valid3 = UserHasAnyPermission(CustomPermissions.permission3)
+    checker_valid4 = UserHasAnyPermission(CustomPermissions.permission1, CustomPermissions.permission2)
+    checker_valid5 = UserHasAnyPermission(
+        CustomPermissions.permission1, CustomPermissions.permission2, CustomPermissions.permission3
+    )
+
+    # test valid permissions
+    await checker_valid1(mock_current_active_user)
+    await checker_valid2(mock_current_active_user)
+    await checker_valid3(mock_current_active_user)
+    await checker_valid4(mock_current_active_user)
+    await checker_valid5(mock_current_active_user)
+
+    # test invalid permissions
+    checker_invalid1 = UserHasAnyPermission(CustomPermissions.permission4)
+    checker_invalid2 = UserHasAnyPermission(CustomPermissions.permission5)
+    checker_invalid3 = UserHasAnyPermission(CustomPermissions.permission4, CustomPermissions.permission5)
+    for checker in [checker_invalid1, checker_invalid2, checker_invalid3]:
+        with pytest.raises(HTTPException) as exc:
+            await checker(mock_current_active_user)
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "User does not have required permissions"
+
+    # but if the user is admin, we should be able to pass any permission check
+    mock_current_active_user.is_admin = True
+    await checker_invalid1(mock_current_active_user)
+    await checker_invalid2(mock_current_active_user)
+    await checker_invalid3(mock_current_active_user)
 
 
 @pytest.mark.asyncio
