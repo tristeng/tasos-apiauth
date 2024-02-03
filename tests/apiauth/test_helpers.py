@@ -132,12 +132,14 @@ async def test_get_paginated_results(mock_db: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_get_object_from_db_by_id_or_name(mock_db_get_object: AsyncMock) -> None:
     # test get by integer id
-    actual = Group.from_orm(await get_object_from_db_by_id_or_name(1, mock_db_get_object, "Group", GroupOrm))
+    actual = Group.model_validate(await get_object_from_db_by_id_or_name(1, mock_db_get_object, "Group", GroupOrm))
     assert actual.id == 1
     assert actual.name == "group1"
 
     # test get by string name
-    actual = Group.from_orm(await get_object_from_db_by_id_or_name("group2", mock_db_get_object, "Group", GroupOrm))
+    actual = Group.model_validate(
+        await get_object_from_db_by_id_or_name("group2", mock_db_get_object, "Group", GroupOrm)
+    )
     assert actual.id == 2
     assert actual.name == "group2"
 
@@ -163,7 +165,7 @@ async def test_get_object_from_db_by_id_or_name_invalid_model() -> None:
     with pytest.raises(HTTPException) as exc:
         await get_object_from_db_by_id_or_name("this won't work!", AsyncMock(AsyncSession), "User", UserOrm)
 
-    assert exc.value.status_code == 500
+    assert exc.value.status_code == 400
     assert exc.value.detail == "Can only query User with an integer ID"
 
 

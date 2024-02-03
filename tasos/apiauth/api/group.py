@@ -7,7 +7,7 @@ from typing import Sequence, Annotated
 from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends
 
-from pydantic import BaseModel, constr
+from pydantic import StringConstraints, BaseModel
 from sqlalchemy import select
 from starlette import status
 
@@ -31,7 +31,9 @@ class GroupQueryParams(BaseFilterQueryParams):
     The group query parameters
     """
 
-    name: Annotated[str, constr(max_length=100, strip_whitespace=True, to_lower=True)] | None = None
+    name: (
+        Annotated[str, Annotated[str, StringConstraints(max_length=100, strip_whitespace=True, to_lower=True)]] | None
+    ) = None
 
 
 class GroupOrderColumns(StrEnum):
@@ -58,7 +60,9 @@ class GroupCreate(BaseModel):
     The group model to create a new group
     """
 
-    name: Annotated[str, constr(min_length=3, max_length=100, strip_whitespace=True, to_lower=True)]  #: the group name
+    name: Annotated[
+        str, Annotated[str, StringConstraints(min_length=3, max_length=100, strip_whitespace=True, to_lower=True)]
+    ]  #: the group name
     permissions: set[str] | None = None  #: exact names
 
 
@@ -122,7 +126,7 @@ def add_group_endpoints_to_app(
         """
         Returns the group by the given ID or name
         """
-        return Group.from_orm(await get_object_from_db_by_id_or_name(group_id, db, "Group", GroupOrm))
+        return Group.model_validate(await get_object_from_db_by_id_or_name(group_id, db, "Group", GroupOrm))
 
     @app.post(
         path + "/groups",
@@ -157,7 +161,7 @@ def add_group_endpoints_to_app(
         await db.commit()
         await db.refresh(group_orm)  # refresh the group to get the permissions
 
-        return Group.from_orm(group_orm)
+        return Group.model_validate(group_orm)
 
     @app.put(
         path + "/groups/{group_id}",
@@ -199,4 +203,4 @@ def add_group_endpoints_to_app(
         await db.commit()
         await db.refresh(group_orm)  # refresh the group to get the permissions
 
-        return Group.from_orm(group_orm)
+        return Group.model_validate(group_orm)

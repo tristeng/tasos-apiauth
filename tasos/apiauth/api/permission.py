@@ -6,7 +6,7 @@ from typing import Sequence, Annotated, Any
 
 from fastapi import FastAPI
 from fastapi.params import Depends
-from pydantic import constr
+from pydantic import StringConstraints
 from sqlalchemy import BinaryExpression, ColumnElement
 
 from tasos.apiauth.auth import get_current_admin_user
@@ -28,7 +28,7 @@ class PermissionQueryParams(BaseFilterQueryParams):
     The permission query parameters
     """
 
-    name: Annotated[str, constr(max_length=100)] | None = None
+    name: Annotated[str, Annotated[str, StringConstraints(max_length=100)]] | None = None
 
 
 class PermissionOrderColumns(StrEnum):
@@ -104,6 +104,6 @@ def add_permission_endpoints_to_app(
         """
         Returns the permission by the given ID or name
         """
-        return Permission.from_orm(
+        return Permission.model_validate(
             await get_object_from_db_by_id_or_name(permission_id, db, "Permission", PermissionOrm)
         )

@@ -4,8 +4,7 @@
 import re
 from functools import cache
 from typing import Pattern
-
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # defaults
 PASSWORD_REGEX = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,50}$"
@@ -28,11 +27,7 @@ class ApiAuthSettings(BaseSettings):
     password_regex: Pattern[str] = re.compile(PASSWORD_REGEX)  #: regex for password strength
     password_help: str = PASSWORD_HELP  #: help text for password strength
     datetime_fmt: str = DATETIME_FMT  #: datetime format for the API
-
-    class Config:
-        env_prefix = "apiauth_"
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_prefix="apiauth_", env_file=".env", env_file_encoding="utf-8")
 
 
 @cache

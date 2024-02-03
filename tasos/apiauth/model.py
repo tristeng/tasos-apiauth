@@ -3,7 +3,7 @@
 #
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, SecretStr, validator
+from pydantic import field_validator, ConfigDict, BaseModel, EmailStr, SecretStr, ValidationInfo
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, func, Table, Column
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -67,9 +67,7 @@ class User(BaseModel):
     is_admin: bool
     last_login: datetime | None
     created: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
     def __str__(self) -> str:  # pragma: no cover
         settings = get_apiauth_settings()
@@ -113,9 +111,7 @@ class Group(BaseModel):
     name: str
     created: datetime
     permissions: list["Permission"]
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
     def __str__(self) -> str:  # pragma: no cover
         settings = get_apiauth_settings()
@@ -144,9 +140,7 @@ class Permission(BaseModel):
     id: int
     name: str
     created: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
     def __str__(self) -> str:  # pragma: no cover
         settings = get_apiauth_settings()
@@ -170,16 +164,18 @@ class Password(BaseModel):
     password: SecretStr
     password_confirm: SecretStr
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def password_strength(cls, v: SecretStr) -> SecretStr:
         auth_settings = get_apiauth_settings()
         if not auth_settings.password_regex.match(v.get_secret_value()):
             raise ValueError(auth_settings.password_help)
         return v
 
-    @validator("password_confirm")
-    def passwords_match(cls, v: SecretStr, values: dict[str, SecretStr]) -> SecretStr:
-        if "password" in values and v.get_secret_value() != values["password"].get_secret_value():
+    @field_validator("password_confirm")
+    @classmethod
+    def passwords_match(cls, v: SecretStr, info: ValidationInfo) -> SecretStr:
+        if "password" in info.data and v.get_secret_value() != info.data["password"].get_secret_value():
             raise ValueError("Passwords do not match")
         return v
 
@@ -199,14 +195,15 @@ class ChangePassword(Password):
 
     current_password: SecretStr
 
-    @validator("current_password")
-    def current_password_matches_new(cls, v: SecretStr, values: dict[str, SecretStr]) -> SecretStr:
-        if "password" in values and v.get_secret_value() == values["password"].get_secret_value():
+    @field_validator("current_password")
+    @classmethod
+    def current_password_matches_new(cls, v: SecretStr, info: ValidationInfo) -> SecretStr:
+        if "password" in info.data and v.get_secret_value() == info.data["password"].get_secret_value():
             raise ValueError("You cannot use your current password as your new password")
         return v
 
 
 # update forward refs for ORM models
-UserInternal.update_forward_refs()
-Group.update_forward_refs()
-Permission.update_forward_refs()
+UserInternal.model_rebuild()
+Group.model_rebuild()
+Permission.model_rebuild()
