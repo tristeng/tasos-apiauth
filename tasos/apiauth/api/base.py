@@ -1,7 +1,7 @@
 #
 # Copyright Tristen Georgiou 2023
 #
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Annotated, Callable, Awaitable
 
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
@@ -93,7 +93,7 @@ def add_base_endpoints_to_app(app: FastAPI, path: str = "/auth") -> None:
             )
 
         # update the last login time
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(UTC)
         await db.commit()
 
         return Token(access_token=create_access_token(data={"sub": user.email}))

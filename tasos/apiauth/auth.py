@@ -2,7 +2,7 @@
 # Copyright Tristen Georgiou 2023
 #
 # mostly implemented according to https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
@@ -49,7 +49,7 @@ def create_access_token(data: dict[str, Any]) -> str:
     """
     auth_settings = get_apiauth_settings()
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=auth_settings.access_token_expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=auth_settings.access_token_expire_minutes)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, auth_settings.secret_key, algorithm=auth_settings.algorithm)
     return encoded_jwt

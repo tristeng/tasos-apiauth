@@ -15,7 +15,11 @@ application. I also wanted to test out [GitHub Copilot](https://github.com/featu
 the README were generated with Copilot's AI assistance.
 
 ## Installation
-Coming soon...
+The latest stable version can be found on pypi.org and can be installed with the package manager of your choice, e.g.
+for Poetry:
+```shell
+poetry add tasos-apiauth
+```
 
 ## Quick Start
 Pre-requisites:

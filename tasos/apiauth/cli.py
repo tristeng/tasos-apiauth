@@ -49,7 +49,7 @@ async def _create_user(userargs: argparse.Namespace) -> None:
         db.add(user)
         await db.commit()
 
-        print(f"User created successfully: {User.from_orm(user)}")
+        print(f"User created successfully: {User.model_validate(user)}")
 
 
 async def _edit_user(userargs: argparse.Namespace) -> None:
@@ -85,7 +85,7 @@ async def _edit_user(userargs: argparse.Namespace) -> None:
         db.add(user)
         await db.commit()
 
-        print(f"User updated successfully: {User.from_orm(user)}")
+        print(f"User updated successfully: {User.model_validate(user)}")
 
 
 async def _list_users(userargs: argparse.Namespace) -> None:
@@ -111,11 +111,11 @@ async def _list_users(userargs: argparse.Namespace) -> None:
         users = await db.execute(stmt)
         print("Users:")
         for user in users.scalars():  # pragma: no cover
-            print(f"  {User.from_orm(user)}")
+            print(f"  {User.model_validate(user)}")
             if user.groups:
                 print("    Groups:")
                 for group in user.groups:
-                    print(f"      {Group.from_orm(group)}")
+                    print(f"      {Group.model_validate(group)}")
 
 
 async def _list_permissions(permargs: argparse.Namespace) -> None:
@@ -134,7 +134,7 @@ async def _list_permissions(permargs: argparse.Namespace) -> None:
         permissions = await db.execute(stmt)
         print("Permissions:")
         for permission in permissions.scalars():  # pragma: no cover
-            print(f"  {Permission.from_orm(permission)}")
+            print(f"  {Permission.model_validate(permission)}")
 
 
 async def _list_groups(groupargs: argparse.Namespace) -> None:
@@ -153,7 +153,7 @@ async def _list_groups(groupargs: argparse.Namespace) -> None:
         groups = await db.execute(stmt)
         print("Groups:")
         for group in groups.scalars():  # pragma: no cover
-            print(f"  {Group.from_orm(group)}")
+            print(f"  {Group.model_validate(group)}")
 
 
 async def _create_group(groupargs: argparse.Namespace) -> None:
@@ -177,7 +177,7 @@ async def _create_group(groupargs: argparse.Namespace) -> None:
         await db.commit()
         await db.refresh(group)  # refresh the group to get the permissions
 
-        print(f"Group created successfully: {Group.from_orm(group)}")
+        print(f"Group created successfully: {Group.model_validate(group)}")
 
 
 async def _edit_group(groupargs: argparse.Namespace) -> None:
@@ -210,7 +210,7 @@ async def _edit_group(groupargs: argparse.Namespace) -> None:
         db.add(group)
         await db.commit()
 
-        print(f"Group updated successfully: {Group.from_orm(group)}")
+        print(f"Group updated successfully: {Group.model_validate(group)}")
 
 
 def create_user(userargs: argparse.Namespace) -> None:  # pragma: no cover

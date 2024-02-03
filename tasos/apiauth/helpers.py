@@ -6,7 +6,6 @@ from typing import TypeVar, Generic, Any, Annotated, Sequence
 
 from fastapi import HTTPException, Depends
 from pydantic import BaseModel, Field
-from pydantic.generics import GenericModel
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +29,7 @@ class BaseFilterQueryParams(BaseModel):
     offset: int = Field(default=0, ge=0, description="The offset to start from")
 
 
-class Paginated(GenericModel, Generic[T]):
+class Paginated(BaseModel, Generic[T]):
     """
     A generic paginated response model
     """
@@ -181,16 +180,20 @@ async def get_object_from_db_by_id_or_name(id_or_name: int | str, db: AsyncSessi
     :return: The object that matches the given id or name
     :raises HTTPException: If the object is not found or multiple objects are found
     """
-    if isinstance(id_or_name, int):
+    try:
+        # assume input is an integer for first try
+        id_or_name = int(id_or_name)
         results = await db.execute(select(orm).where(orm.id == id_or_name))
         not_found_msg = f"{name} with ID {id_or_name} not found"
-    elif hasattr(orm, "name"):
-        results = await db.execute(select(orm).where(orm.name == id_or_name))  # exact match, not like
-        not_found_msg = f"{name} with name '{id_or_name}' not found"
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Can only query {name} with an integer ID"
-        )
+    except ValueError:
+        # means we are attempting to search by name
+        if hasattr(orm, "name"):
+            results = await db.execute(select(orm).where(orm.name == id_or_name))  # exact match, not like
+            not_found_msg = f"{name} with name '{id_or_name}' not found"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Can only query {name} with an integer ID"
+            )
 
     try:
         return results.scalar_one()

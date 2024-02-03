@@ -58,10 +58,10 @@ def mock_database(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
 
 @pytest.fixture
 def mock_user_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    def mock_user_from_orm(user: UserOrm) -> str:  # noqa
+    def mock_user_model_validate(user: UserOrm) -> str:  # noqa
         return "user info"
 
-    monkeypatch.setattr("tasos.apiauth.cli.User.from_orm", mock_user_from_orm)
+    monkeypatch.setattr("tasos.apiauth.cli.User.model_validate", mock_user_model_validate)
 
 
 @pytest.fixture
