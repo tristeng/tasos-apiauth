@@ -9,9 +9,15 @@ packages = [
     {include = "tasos"}
 ]
 
+[project.urls]
+Homepage = "https://github.com/tristeng/tasos-apiauth"
+Repository = "https://github.com/tristeng/tasos-apiauth.git"
+Issues = "https://github.com/tristeng/tasos-apiauth/issues"
+Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
+
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.109.1"
+fastapi = "^0.110.0"
 python-multipart = "0.0.7"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
@@ -92,6 +98,10 @@ no_implicit_reexport = true
 
 # for strict mypy: (this is the tricky one :-))
 disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "httpx.*"
+ignore_missing_imports = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
