@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from tasos.apiauth.api.base import add_base_endpoints_to_app, post_registration_hooks
@@ -69,7 +69,7 @@ async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]
     # add the task to the list of hooks
     post_registration_hooks.append(hook)
 
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         url = "/auth/register"
         response = await ac.post(url, json=register_payload)
 
@@ -87,7 +87,7 @@ async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]
     assert HOOK_CALLED is True
 
     # try to register the same user again
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         response = await ac.post(url, json=register_payload)
 
     assert response.status_code == 409
@@ -96,7 +96,7 @@ async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_login_for_access_token(db_engine: AsyncEngine, register_payload: dict[str, str]) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # test login with valid credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -128,7 +128,7 @@ async def test_login_for_access_token(db_engine: AsyncEngine, register_payload: 
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_current_user_info(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -146,7 +146,7 @@ async def test_current_user_info(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_change_password(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})

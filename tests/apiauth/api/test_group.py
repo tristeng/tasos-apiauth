@@ -6,7 +6,7 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tasos.apiauth.api.base import add_base_endpoints_to_app
@@ -75,7 +75,7 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_list_groups(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -101,7 +101,7 @@ async def test_list_groups(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_get_group(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -124,7 +124,7 @@ async def test_get_group(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_create_group(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -145,7 +145,7 @@ async def test_create_group(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_create_group_name_exists(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -164,7 +164,7 @@ async def test_create_group_name_exists(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_create_group_with_permissions(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -188,7 +188,7 @@ async def test_create_group_with_permissions(db_engine: AsyncEngine) -> None:  #
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_create_group_with_unknown_permission(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -209,7 +209,7 @@ async def test_create_group_with_unknown_permission(db_engine: AsyncEngine) -> N
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_modify_group(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -233,7 +233,7 @@ async def test_modify_group(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_modify_group_name_exists(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})

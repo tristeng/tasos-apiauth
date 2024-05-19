@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.1.2]
+
+### Security
+- Updated project dependencies to latest versions to fix CVEs found in `black`, `idna`, and `dnspython`
+
 ## [0.1.1] - 2024-03-17
 
 ### Added
