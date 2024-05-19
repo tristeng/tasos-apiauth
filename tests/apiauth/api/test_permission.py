@@ -4,7 +4,7 @@
 import pytest
 
 from fastapi import FastAPI, Depends
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tasos.apiauth.api.base import add_base_endpoints_to_app
@@ -75,7 +75,7 @@ async def some_endpoint7() -> dict[str, str]:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_list_permissions(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -96,7 +96,7 @@ async def test_list_permissions(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_get_permission(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "me@admin.com", "password": "Abcdef123!"})
@@ -125,7 +125,7 @@ async def test_get_permission(db_engine: AsyncEngine) -> None:  # noqa
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_permissions_checkers(db_engine: AsyncEngine) -> None:  # noqa
-    async with AsyncClient(app=app, base_url=TEST_URL) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=TEST_URL) as ac:
         # login to get credentials
         url = "/auth/token"
         response = await ac.post(url, data={"username": "notadmin@test.com", "password": "Abcdef123!"})
