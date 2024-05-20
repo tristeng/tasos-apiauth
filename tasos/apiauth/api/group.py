@@ -176,18 +176,10 @@ def add_group_endpoints_to_app(
         db: DatabaseDepends,
     ) -> Group:
         """
-        Modifies an existing group - permissions are replaced
+        Modifies an existing group - permissions are replaced if provided
         """
         # make sure the group exists
         group_orm: GroupOrm = await get_object_from_db_by_id_or_name(group_id, db, "Group", GroupOrm)
-
-        # make sure the permissions are valid and fetch them from the database
-        permissions: list[PermissionOrm] = []
-        try:
-            if group.permissions:
-                permissions = await get_objects_by_name(set(group.permissions), db, "Permission", PermissionOrm)
-        except ValueError as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
         # update the group name if the user is attempting to do so
         if group.name and group.name != group_orm.name:
@@ -199,7 +191,15 @@ def add_group_endpoints_to_app(
                 )
             group_orm.name = group.name
 
-        group_orm.permissions = permissions
+        # if permissions were provided, get the permissions and assign them to the group
+        if group.permissions is not None:
+            try:
+                group_orm.permissions = await get_objects_by_name(
+                    set(group.permissions), db, "Permission", PermissionOrm
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
         await db.commit()
         await db.refresh(group_orm)  # refresh the group to get the permissions
 

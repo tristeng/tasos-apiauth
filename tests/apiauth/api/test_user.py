@@ -34,8 +34,13 @@ async def test_list_users(db_engine: AsyncEngine) -> None:  # noqa
         assert data["total"] == 2
         assert data["items"][0]["id"] == 1
         assert data["items"][0]["email"] == "not@active.com"
+        assert len(data["items"][0]["groups"]) == 1
+        assert data["items"][0]["groups"][0]["name"] == "group1"
+        assert len(data["items"][0]["groups"][0]["permissions"]) == 2
+
         assert data["items"][1]["id"] == 2
         assert data["items"][1]["email"] == "me@admin.com"
+        assert len(data["items"][1]["groups"]) == 0
 
 
 @pytest.mark.asyncio
@@ -56,6 +61,9 @@ async def test_get_user(db_engine: AsyncEngine) -> None:  # noqa
         data = response.json()
         assert data["id"] == 1
         assert data["email"] == "not@active.com"
+        assert len(data["groups"]) == 1
+        assert data["groups"][0]["name"] == "group1"
+        assert len(data["groups"][0]["permissions"]) == 2
 
         # get a user by email
         url = "/admin/users/me@admin.com"
@@ -65,6 +73,7 @@ async def test_get_user(db_engine: AsyncEngine) -> None:  # noqa
         data = response.json()
         assert data["id"] == 2
         assert data["email"] == "me@admin.com"
+        assert len(data["groups"]) == 0
 
 
 @pytest.mark.asyncio
@@ -77,12 +86,12 @@ async def test_modify_user(db_engine: AsyncEngine) -> None:  # noqa
         assert response.status_code == 200
         token = response.json()["access_token"]
 
-        # modify a user by ID - make them admin and activate them
+        # modify a user by ID - make them admin, activate them and clear out their groups
         url = "/admin/users/1"
         response = await ac.put(
             url,
             headers={"Authorization": f"Bearer {token}"},
-            json={"is_active": True, "is_admin": True},
+            json={"is_active": True, "is_admin": True, "groups": []},
         )
         assert response.status_code == 200
 
@@ -90,13 +99,14 @@ async def test_modify_user(db_engine: AsyncEngine) -> None:  # noqa
         assert data["id"] == 1
         assert data["is_active"] is True
         assert data["is_admin"] is True
+        assert len(data["groups"]) == 0
 
-        # modify a user by email - remove admin access but leave them active
+        # modify a user by email - remove admin access but leave them active and add them to group2
         url = "/admin/users/not@active.com"
         response = await ac.put(
             url,
             headers={"Authorization": f"Bearer {token}"},
-            json={"is_admin": False},
+            json={"is_admin": False, "groups": ["group2"]},
         )
         assert response.status_code == 200
 
@@ -104,6 +114,9 @@ async def test_modify_user(db_engine: AsyncEngine) -> None:  # noqa
         assert data["id"] == 1
         assert data["is_active"] is True
         assert data["is_admin"] is False
+        assert len(data["groups"]) == 1
+        assert data["groups"][0]["name"] == "group2"
+        assert len(data["groups"][0]["permissions"]) == 1
 
         # login as the non-admin user who is now active, and make sure they can't modify the other user
         url = "/auth/token"

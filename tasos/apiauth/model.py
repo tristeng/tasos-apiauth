@@ -67,6 +67,7 @@ class User(BaseModel):
     is_admin: bool
     last_login: datetime | None
     created: datetime
+    groups: list["Group"]
     model_config = ConfigDict(from_attributes=True)
 
     def __str__(self) -> str:  # pragma: no cover
@@ -80,12 +81,10 @@ class User(BaseModel):
 
 class UserInternal(User):
     """
-    The user internal FastAPI model - the model that mirrors the ORM model
+    The user internal FastAPI model - not for public display
     """
 
     hashed_pw: SecretStr
-
-    groups: list["Group"]
 
 
 class GroupOrm(Base):
