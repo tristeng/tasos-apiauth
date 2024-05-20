@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.2.0]
+
+### Added
+- Modifying a user can now accept an optional list of groups to assign to that user - to clear out a user's groups, PUT an empty list for groups
+
+### Changed
+- If permissions are ommited to a group change (i.e. not specified or None), they won't be cleared out - an empty list must be specified to do so
+- The user groups and their associated permissions are now returned with the user object
+
 ## [0.1.2]
 
 ### Security

@@ -14,7 +14,7 @@ from tasos.apiauth.api.group import add_group_endpoints_to_app
 from tasos.apiauth.auth import hash_password
 from tasos.apiauth.db import get_engine, get_sessionmaker
 from tasos.apiauth.model import Base, UserOrm, GroupOrm, PermissionOrm
-from tests.apiauth.api.test_base import TEST_URL
+from .test_base import TEST_URL
 
 # test app
 app = FastAPI()
@@ -228,6 +228,18 @@ async def test_modify_group(db_engine: AsyncEngine) -> None:  # noqa
         assert data["name"] == "group1"
         assert len(data["permissions"]) == 1
         assert data["permissions"][0]["name"] == "permission1"
+
+        # test clearing out the permissions
+        url = "/admin/groups/1"
+        response = await ac.put(
+            url, headers={"Authorization": f"Bearer {token}"}, json={"name": "group1", "permissions": []}
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["id"] == 1
+        assert data["name"] == "group1"
+        assert len(data["permissions"]) == 0
 
 
 @pytest.mark.asyncio

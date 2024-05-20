@@ -81,7 +81,7 @@ def add_permission_endpoints_to_app(
         db: DatabaseDepends,
     ) -> Paginated[Permission]:
         """
-        Returns a list of the groups based on the query parameters
+        Returns a list of the permissions based on the query parameters
         """
         # create the where clauses
         where_clauses: list[ColumnElement[Any] | BinaryExpression[Any]] = []

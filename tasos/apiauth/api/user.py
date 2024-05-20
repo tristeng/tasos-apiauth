@@ -13,13 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tasos.apiauth.auth import get_current_admin_user
 from tasos.apiauth.db import DatabaseDepends
-from tasos.apiauth.model import User, UserOrm
+from tasos.apiauth.model import User, UserOrm, GroupOrm
 from tasos.apiauth.helpers import (
     Paginated,
     BaseFilterQueryParams,
     validate_path,
     get_paginated_results,
     BaseOrderQueryParams,
+    get_objects_by_name,
 )
 
 
@@ -57,6 +58,7 @@ class UserModify(BaseModel):
 
     is_active: bool | None = None
     is_admin: bool | None = None
+    groups: set[str] | None = None
 
 
 async def get_user_from_db_by_id_or_email(user_id: int | EmailStr, db: AsyncSession) -> UserOrm:
@@ -152,7 +154,7 @@ def add_user_endpoints_to_app(
         db: DatabaseDepends,
     ) -> UserOrm:
         """
-        Modifies an existing user
+        Modifies an existing user - groups are replaced if provided
         """
         user = await get_user_from_db_by_id_or_email(user_id, db)
 
@@ -161,6 +163,13 @@ def add_user_endpoints_to_app(
 
         if user_modify.is_admin is not None:
             user.is_admin = user_modify.is_admin
+
+        # if group names were provided, get the groups and assign them to the user
+        if user_modify.groups is not None:
+            try:
+                user.groups = await get_objects_by_name(set(user_modify.groups), db, "Group", GroupOrm)
+            except ValueError as e:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
         db.add(user)
         await db.commit()

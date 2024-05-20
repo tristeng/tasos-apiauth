@@ -54,7 +54,10 @@ def add_base_endpoints_to_app(app: FastAPI, path: str = "/auth") -> None:
 
         # otherwise create the user in the database
         user = UserOrm(
-            email=form_data.email, hashed_pw=hash_password(form_data.password.get_secret_value()), is_active=True
+            email=form_data.email,
+            hashed_pw=hash_password(form_data.password.get_secret_value()),
+            is_active=True,
+            groups=[],
         )
         db.add(user)
         await db.commit()

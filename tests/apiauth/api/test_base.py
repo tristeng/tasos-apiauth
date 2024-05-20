@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from tasos.apiauth.api.base import add_base_endpoints_to_app, post_registration_hooks
 from tasos.apiauth.auth import hash_password
 from tasos.apiauth.db import get_engine, get_sessionmaker
-from tasos.apiauth.model import Base, UserOrm
+from tasos.apiauth.model import Base, UserOrm, GroupOrm, PermissionOrm
 
 
 # test app
@@ -32,7 +32,26 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
     # create a deactivated user and an admin user
     session_maker = get_sessionmaker()
     async with session_maker() as conn:
-        d_user = UserOrm(email="not@active.com", hashed_pw=hash_password("Abcdef123!"), is_active=False, is_admin=False)
+        # add some permissions
+        perm1 = PermissionOrm(name="permission1")
+        perm2 = PermissionOrm(name="permission2")
+        conn.add(perm1)
+        conn.add(perm2)
+
+        # add some groups
+        group1 = GroupOrm(name="group1", permissions=[perm1, perm2])
+        conn.add(group1)
+
+        group2 = GroupOrm(name="group2", permissions=[perm2])
+        conn.add(group2)
+
+        d_user = UserOrm(
+            email="not@active.com",
+            hashed_pw=hash_password("Abcdef123!"),
+            is_active=False,
+            is_admin=False,
+            groups=[group1],
+        )
         admin = UserOrm(email="me@admin.com", hashed_pw=hash_password("Abcdef123!"), is_active=True, is_admin=True)
 
         conn.add(d_user)
@@ -81,6 +100,7 @@ async def test_register(db_engine: AsyncEngine, register_payload: dict[str, str]
     assert resp["is_active"] is True
     assert resp["is_admin"] is False
     assert resp["last_login"] is None
+    assert resp["groups"] == []
 
     # test that the post registration hook was called
     await asyncio.sleep(0.5)  # wait for the background task to finish
