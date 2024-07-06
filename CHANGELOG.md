@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.2.1]
+
+### Security
+- Certifi removes GLOBALTRUST root certificate, see security issue [#10](https://github.com/tristeng/tasos-apiauth/security/dependabot/10)
+
 ## [0.2.0]
 
 ### Added

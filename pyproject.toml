@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tasos-apiauth"
-version = "0.2.0"
+version = "0.2.1"
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
 authors = ["tristeng <tristen.georgiou@gmail.com>"]
 readme = "README.md"
