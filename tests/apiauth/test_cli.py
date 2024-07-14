@@ -103,7 +103,10 @@ def mock_get_user_exists(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def mock_get_permissions(monkeypatch: pytest.MonkeyPatch) -> None:
     async def mock_get_objects_by_name(
-        names: set[str], db: AsyncMock, model_name: str, orm: Type[Base]  # noqa
+        names: set[str],
+        db: AsyncMock,
+        model_name: str,
+        orm: Type[Base],  # noqa
     ) -> list[Base]:
         return [
             PermissionOrm(id=1, name="read", created=datetime.now()),
@@ -116,7 +119,10 @@ def mock_get_permissions(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def mock_get_groups(monkeypatch: pytest.MonkeyPatch) -> None:
     async def mock_get_objects_by_name(
-        names: set[str], db: AsyncMock, model_name: str, orm: Type[Base]  # noqa
+        names: set[str],
+        db: AsyncMock,
+        model_name: str,
+        orm: Type[Base],  # noqa
     ) -> list[Base]:
         return [
             GroupOrm(id=1, name="owner", created=datetime.now()),
