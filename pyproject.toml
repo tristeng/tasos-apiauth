@@ -1,3 +1,18 @@
+[project]
+name = "tasos-apiauth"
+version = "0.2.2"
+authors = ["tristeng <tristen.georgiou@gmail.com>"]
+description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.urls]
+Homepage = "https://github.com/tristeng/tasos-apiauth"
+Repository = "https://github.com/tristeng/tasos-apiauth.git"
+Issues = "https://github.com/tristeng/tasos-apiauth/issues"
+Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
+
 [tool.poetry]
 name = "tasos-apiauth"
 version = "0.2.2"
@@ -10,12 +25,6 @@ license = "MIT"
 packages = [
     {include = "tasos"}
 ]
-
-[project.urls]
-Homepage = "https://github.com/tristeng/tasos-apiauth"
-Repository = "https://github.com/tristeng/tasos-apiauth.git"
-Issues = "https://github.com/tristeng/tasos-apiauth/issues"
-Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 
 [tool.poetry.urls]
 Issues = "https://github.com/tristeng/tasos-apiauth/issues"
