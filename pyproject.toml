@@ -1,6 +1,6 @@
 [project]
 name = "tasos-apiauth"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["tristeng <tristen.georgiou@gmail.com>"]
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
 license = "MIT"
@@ -15,7 +15,7 @@ Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 
 [tool.poetry]
 name = "tasos-apiauth"
-version = "0.2.2"
+version = "0.2.3"
 homepage = "https://github.com/tristeng/tasos-apiauth"
 repository = "https://github.com/tristeng/tasos-apiauth.git"
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
@@ -33,12 +33,12 @@ Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.115"
-python-multipart = "0.0.18"
-python-jose = {extras = ["cryptography"], version = "^3.4"}
-passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.34"}
-pydantic = {extras = ["email", "dotenv"], version = "^2.9.0"}
-pydantic-settings = "^2.3.4"
+python-multipart = "0.0.20"
+python-jose = {extras = ["cryptography"], version = "^3.5"}
+passlib = {extras = ["bcrypt"], version = "^1.7"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0"}
+pydantic = {extras = ["email", "dotenv"], version = "^2.11"}
+pydantic-settings = "^2.10"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

@@ -54,18 +54,18 @@ def test_password_validation(
     valid_registrations: list[dict[str, str]], invalid_passwords: list[dict[str, str]]
 ) -> None:
     for data in valid_registrations:
-        reg = Password.parse_obj(data)
+        reg = Password.model_validate(data)
 
         assert reg.password.get_secret_value() == data["password"]
         assert reg.password_confirm.get_secret_value() == data["password_confirm"]
 
     for data in invalid_passwords:
         with pytest.raises(ValueError, match="Password must be between 8 and 50 characters"):
-            Password.parse_obj(data)
+            Password.model_validate(data)
 
     # test passwords don't match
     with pytest.raises(ValueError, match="Passwords do not match"):
-        Password.parse_obj(
+        Password.model_validate(
             {
                 "password": "Abcdef123!",
                 "password_confirm": "no match!",
@@ -75,7 +75,7 @@ def test_password_validation(
 
 def test_new_password_same_as_old() -> None:
     with pytest.raises(ValueError, match="You cannot use your current password as your new password"):
-        ChangePassword.parse_obj(
+        ChangePassword.model_validate(
             {
                 "current_password": "Abcdef123!",
                 "password": "Abcdef123!",
@@ -86,7 +86,7 @@ def test_new_password_same_as_old() -> None:
 
 def test_password_change() -> None:
     # test valid password change
-    ChangePassword.parse_obj(
+    ChangePassword.model_validate(
         {
             "current_password": "Abcdef123!",
             "password": "1%TasosSoftware",

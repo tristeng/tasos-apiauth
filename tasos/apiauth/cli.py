@@ -28,7 +28,7 @@ async def _create_user(userargs: argparse.Namespace) -> None:
         raise ValueError("Passwords do not match")
 
     # validate the email and password using the pydantic models - throws a ValueError if invalid
-    registration = Registration.parse_obj(
+    registration = Registration.model_validate(
         {"email": userargs.email, "password": password, "password_confirm": password_confirm}
     )
 
