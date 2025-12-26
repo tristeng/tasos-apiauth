@@ -7,8 +7,9 @@ from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
-from passlib.context import CryptContext
+import jwt
+from jwt.exceptions import InvalidTokenError
+from pwdlib import PasswordHash
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +20,7 @@ from tasos.apiauth.model import UserOrm
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 # blowfish cryptography hashing algorithm
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = PasswordHash.recommended()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -103,7 +104,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Da
         if email is None:
             raise credentials_exception
 
-    except JWTError:  # pragma: no cover
+    except InvalidTokenError:  # pragma: no cover
         raise credentials_exception
 
     # shouldn't be possible for this to be None, but just in case
