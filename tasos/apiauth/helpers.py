@@ -201,7 +201,7 @@ async def get_object_from_db_by_id_or_name(id_or_name: int | str, db: AsyncSessi
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_msg)
     except MultipleResultsFound:  # should only be possible for models where the name is not unique
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Multiple {name}s found for name '{id_or_name}'"
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"Multiple {name}s found for name '{id_or_name}'"
         )
 
 

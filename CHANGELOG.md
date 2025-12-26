@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.3.0]
+
+### Changed
+- Changed OAuth2 JWT to use PyJWT and pwdlib (replacing python-jose and passlib)
+
+### Security
+- Updated project dependencies to latest versions
+
 ## [0.2.2]
 
 ### Security
