@@ -1,6 +1,6 @@
 [project]
 name = "tasos-apiauth"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["tristeng <tristen.georgiou@gmail.com>"]
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
 license = "MIT"
@@ -15,7 +15,7 @@ Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 
 [tool.poetry]
 name = "tasos-apiauth"
-version = "0.3.0"
+version = "0.3.1"
 homepage = "https://github.com/tristeng/tasos-apiauth"
 repository = "https://github.com/tristeng/tasos-apiauth.git"
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
