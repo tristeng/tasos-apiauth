@@ -32,8 +32,8 @@ Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.127"
-python-multipart = "0.0.22"
+fastapi = "^0.137"
+python-multipart = "0.0.32"
 pyjwt = {extras = ["crypto"], version = "^2.12"}
 pwdlib = {extras = ["argon2"], version = "^0.3"}
 sqlalchemy = {extras = ["asyncio"], version = "^2.0"}
