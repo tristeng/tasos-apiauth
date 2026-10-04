@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.3.3]
+
+### Security
+- Updated pyjwt to fix security issues
+
 ## [0.3.2]
 
 ### Security

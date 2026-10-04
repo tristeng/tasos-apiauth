@@ -1,6 +1,6 @@
 [project]
 name = "tasos-apiauth"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["tristeng <tristen.georgiou@gmail.com>"]
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
 license = "MIT"
@@ -15,7 +15,7 @@ Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 
 [tool.poetry]
 name = "tasos-apiauth"
-version = "0.3.2"
+version = "0.3.3"
 homepage = "https://github.com/tristeng/tasos-apiauth"
 repository = "https://github.com/tristeng/tasos-apiauth.git"
 description = "A re-usable FastAPI library that implements authentication, users, groups and permission handling."
@@ -34,7 +34,7 @@ Changelog = "https://github.com/tristeng/tasos-apiauth/blob/main/CHANGELOG.md"
 python = "^3.11"
 fastapi = "^0.137"
 python-multipart = "0.0.32"
-pyjwt = {extras = ["crypto"], version = "^2.13"}
+pyjwt = {extras = ["crypto"], version = "^2.15"}
 pwdlib = {extras = ["argon2"], version = "^0.3"}
 sqlalchemy = {extras = ["asyncio"], version = "^2.0"}
 pydantic = {extras = ["email", "dotenv"], version = "^2.12"}
